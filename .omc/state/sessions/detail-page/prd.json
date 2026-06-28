@@ -1,0 +1,63 @@
+{
+  "stories": [
+    {
+      "id": "STORY-1",
+      "title": "XAML 布局改造 — DetailShell 内部重写",
+      "description": "将 DetailShell 内的 DockPanel 替换为 Grid 布局，包含封面区、标签栏、内容区、底部信息栏。保留顶部栏和编辑模式。删除切换卡片样式菜单项。",
+      "acceptanceCriteria": [
+        "DetailShell 内部使用 Grid 布局替代 DockPanel，包含封面/标签/内容/底部栏四个区",
+        "封面区域固定16:9（约480×270），显示 cover.jpg 或纯色+🎬图标",
+        "▶ 播放叠加按钮在有视频时显示",
+        "标签栏：[视频集] [图集] 按钮，Tag 属性绑定点击切换",
+        "视频集标签隐藏当 HasVideo=false",
+        "图集标签隐藏当 HasImages=false",
+        "DetailVideoContent — ItemsControl 绑定 VideoPaths",
+        "DetailGalleryContent — ItemsControl 绑定 ImageSetPaths",
+        "编辑模式结构保留，EditFormPanel 在原位",
+        "切换卡片样式菜单项已从更多菜单中删除",
+        "XAML 编译通过"
+      ],
+      "passes": false
+    },
+    {
+      "id": "STORY-2",
+      "title": "C# 事件处理 — 标签切换 + 图集胶水代码 + OpenReader 提取",
+      "description": "添加 DetailTab_Click、UpdateDetailTabVisibility、DetailGalleryItem_MouseDoubleClick、DetailPlayAll_Click 等方法和 OpenReader 辅助函数",
+      "acceptanceCriteria": [
+        "DetailTab_Click 切换 _activeDetailTab 并调用 UpdateDetailTabVisibility",
+        "UpdateDetailTabVisibility 控制标签 Style 和内容区可见性",
+        "DetailGalleryItem_MouseDoubleClick 从 ImageSetPaths 构建 Pages 列表并调用 OpenReader",
+        "OpenReader 是提取的独立方法（从 OpenBook 拆分）",
+        "OpenBook 调用 OpenReader 替代内联代码",
+        "DetailPlayAll_Click 调用 OpenVideoPlayer",
+        "SetDetailVisible 重置 activeTab",
+        "CycleBookStyle_Click 方法已删除",
+        "编译通过"
+      ],
+      "passes": false
+    },
+    {
+      "id": "STORY-3",
+      "title": "FillMetadataEditors 更新 + 底部信息栏",
+      "description": "更新 FillMetadataEditors 中的标签文本和信息栏数据绑定",
+      "acceptanceCriteria": [
+        "MetaPageCountLabelText 显示'视频'或'页数'根据 HasVideo",
+        "MetaCoverPageLabelText 显示'时长'或'封面页'根据 HasVideo",
+        "底部信息栏显示作者·视频数·时长·图集数·出品时间",
+        "▶ 播放全部按钮调用 DetailPlayAll_Click",
+        "信息栏标签分类保留复用 BookTagChips",
+        "编译通过"
+      ],
+      "passes": false
+    },
+    {
+      "id": "STORY-4",
+      "title": "构建验证",
+      "description": "构建整个项目，确保 0 错误 0 警告",
+      "acceptanceCriteria": [
+        "dotnet build Theater/Theater.csproj 输出 0 错误 0 警告"
+      ],
+      "passes": false
+    }
+  ]
+}

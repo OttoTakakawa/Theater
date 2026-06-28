@@ -1,0 +1,837 @@
+<Window x:Class="Theater.Videos.PlayerWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:vlc="clr-namespace:LibVLCSharp.WPF;assembly=LibVLCSharp.WPF"
+        Title="播放器" Height="741" Width="1280" MinHeight="463" MinWidth="800"
+        Background="#000000" WindowStartupLocation="CenterOwner"
+        UseLayoutRounding="True" SnapsToDevicePixels="True"
+        SizeChanged="Window_SizeChanged"
+        PreviewMouseMove="Window_PreviewMouseMove">
+    <Window.Resources>
+        <DropShadowEffect x:Key="BarShadow" Color="#000000" BlurRadius="32" ShadowDepth="0" Opacity="0.55"/>
+
+        <Style x:Key="PlayerButtonStyle" TargetType="Button">
+            <Setter Property="MinWidth" Value="38"/>
+            <Setter Property="MinHeight" Value="38"/>
+            <Setter Property="Padding" Value="10,7"/>
+            <Setter Property="Margin" Value="2"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="Focusable" Value="False"/>
+            <Setter Property="IsTabStop" Value="False"/>
+            <Setter Property="Background" Value="#1AFFFFFF"/>
+            <Setter Property="BorderBrush" Value="#22FFFFFF"/>
+            <Setter Property="Foreground" Value="#F9FAFB"/>
+            <Setter Property="FontSize" Value="13"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+            <Setter Property="FocusVisualStyle" Value="{x:Null}"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="Root"
+                                Background="{TemplateBinding Background}"
+                                BorderBrush="{TemplateBinding BorderBrush}"
+                                BorderThickness="{TemplateBinding BorderThickness}"
+                                CornerRadius="{StaticResource RadiusControl}"
+                                Padding="{TemplateBinding Padding}">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="Root" Property="Background" Value="#30FFFFFF"/>
+                                <Setter TargetName="Root" Property="BorderBrush" Value="#44FFFFFF"/>
+                            </Trigger>
+                            <Trigger Property="IsPressed" Value="True">
+                                <Setter TargetName="Root" Property="Background" Value="#50FFFFFF"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <Style x:Key="IconButtonStyle" TargetType="Button" BasedOn="{StaticResource PlayerButtonStyle}">
+            <Setter Property="MinWidth" Value="38"/>
+            <Setter Property="MinHeight" Value="38"/>
+            <Setter Property="Padding" Value="0"/>
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="BorderBrush" Value="Transparent"/>
+        </Style>
+
+        <Style x:Key="SidePanelTabStyle" TargetType="Button">
+            <Setter Property="MinWidth" Value="64"/>
+            <Setter Property="MinHeight" Value="32"/>
+            <Setter Property="Padding" Value="14,4"/>
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="BorderBrush" Value="Transparent"/>
+            <Setter Property="BorderThickness" Value="0,0,0,2"/>
+            <Setter Property="Foreground" Value="#94A3B8"/>
+            <Setter Property="FontSize" Value="12"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="Focusable" Value="False"/>
+            <Setter Property="IsTabStop" Value="False"/>
+            <Setter Property="FocusVisualStyle" Value="{x:Null}"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="Root"
+                                Background="{TemplateBinding Background}"
+                                BorderBrush="{TemplateBinding BorderBrush}"
+                                BorderThickness="{TemplateBinding BorderThickness}"
+                                Padding="{TemplateBinding Padding}">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter Property="Foreground" Value="#F1F5F9"/>
+                            </Trigger>
+                            <Trigger Property="Tag" Value="active">
+                                <Setter Property="Foreground" Value="#F1F5F9"/>
+                                <Setter TargetName="Root" Property="BorderBrush" Value="#F97316"/>
+                            </Trigger>
+                            <Trigger Property="IsEnabled" Value="False">
+                                <Setter Property="Foreground" Value="#475569"/>
+                                <Setter Property="Cursor" Value="Arrow"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <Style x:Key="SidePanelCloseStyle" TargetType="Button">
+            <Setter Property="Width" Value="32"/>
+            <Setter Property="Height" Value="32"/>
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="BorderBrush" Value="Transparent"/>
+            <Setter Property="Foreground" Value="#94A3B8"/>
+            <Setter Property="FontSize" Value="18"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="Focusable" Value="False"/>
+            <Setter Property="IsTabStop" Value="False"/>
+            <Setter Property="FocusVisualStyle" Value="{x:Null}"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="Root"
+                                Background="{TemplateBinding Background}"
+                                CornerRadius="{StaticResource RadiusClip}">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="Root" Property="Background" Value="#1E293B"/>
+                                <Setter Property="Foreground" Value="#F1F5F9"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <Style TargetType="Slider" x:Key="VolumeSliderStyle">
+            <Setter Property="Height" Value="22"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Slider">
+                        <Grid>
+                            <Track x:Name="PART_Track" VerticalAlignment="Center" Height="22">
+                                <Track.DecreaseRepeatButton>
+                                    <RepeatButton IsTabStop="False" Focusable="False" Height="3">
+                                        <RepeatButton.Template>
+                                            <ControlTemplate TargetType="RepeatButton">
+                                                <Border Height="3" CornerRadius="{StaticResource RadiusScrollTrack}" Background="#D1D5DB"/>
+                                            </ControlTemplate>
+                                        </RepeatButton.Template>
+                                    </RepeatButton>
+                                </Track.DecreaseRepeatButton>
+                                <Track.IncreaseRepeatButton>
+                                    <RepeatButton IsTabStop="False" Focusable="False" Height="3">
+                                        <RepeatButton.Template>
+                                            <ControlTemplate TargetType="RepeatButton">
+                                                <Border Height="3" CornerRadius="{StaticResource RadiusScrollTrack}" Background="#22FFFFFF"/>
+                                            </ControlTemplate>
+                                        </RepeatButton.Template>
+                                    </RepeatButton>
+                                </Track.IncreaseRepeatButton>
+                                <Track.Thumb>
+                                    <Thumb Width="12" Height="12">
+                                        <Thumb.Template>
+                                            <ControlTemplate TargetType="Thumb">
+                                                <Border Width="12" Height="12" CornerRadius="6"
+                                                        Background="#FFFFFF" BorderBrush="#44FFFFFF" BorderThickness="1"/>
+                                            </ControlTemplate>
+                                        </Thumb.Template>
+                                    </Thumb>
+                                </Track.Thumb>
+                            </Track>
+                        </Grid>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+    </Window.Resources>
+
+    <Grid x:Name="StageRoot" Background="#000000" ClipToBounds="True"
+          PreviewMouseWheel="StageRoot_PreviewMouseWheel">
+        <Grid.RowDefinitions>
+            <RowDefinition x:Name="StageContentRow" Height="*" MinHeight="220"/>
+            <RowDefinition x:Name="BottomBarRow" Height="150" MinHeight="92" MaxHeight="260"/>
+        </Grid.RowDefinitions>
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition x:Name="VideoColumn" Width="*"/>
+            <ColumnDefinition x:Name="SidePanelColumn" Width="0" MinWidth="0"/>
+        </Grid.ColumnDefinitions>
+
+        <vlc:VideoView x:Name="VideoViewControl"
+                       Grid.Row="0"
+                       Grid.Column="0"
+                       HorizontalAlignment="Center"
+                       VerticalAlignment="Center"
+                       Background="#000000"
+                       Visibility="Hidden"
+                       Panel.ZIndex="1">
+            <vlc:VideoView.Content>
+                <Grid x:Name="PlayerRoot"
+                      Background="Transparent">
+
+                    <!-- 视频未流时的黑底遮罩：视频流 ready 后由 OnPlaying 隐藏，
+                         Stopped/EndReached 时显示，避免 Win32 HWND 默认白底闪现。 -->
+                    <Border x:Name="VideoBackdrop"
+                            Background="#000000"
+                            Visibility="Visible"
+                            Panel.ZIndex="0"/>
+
+                    <!-- 右侧侧边栏：分段列表 / 播放列表 / 设置
+                         悬浮覆盖式：HorizontalAlignment=Right，Width 固定，不改 VideoView 比例。
+                         默认 Collapsed，由 F6 或底栏「分段列表」按钮切换。 -->
+
+                    <Border x:Name="StatusHint"
+                            HorizontalAlignment="Center"
+                            VerticalAlignment="Center"
+                            Padding="18,10"
+                            Background="#D90F172A"
+                            BorderBrush="#334155"
+                            BorderThickness="1"
+                            CornerRadius="{DynamicResource RadiusPanel}"
+                            Visibility="Collapsed"
+                            IsHitTestVisible="False"
+                            Panel.ZIndex="20">
+                        <TextBlock x:Name="StatusHintText"
+                                   Foreground="#F8FAFC"
+                                   FontSize="13"
+                                   FontWeight="SemiBold"/>
+                    </Border>
+
+                    <!-- 全屏半透明浮层：默认 Collapsed，鼠标近底时由代码后置唤起 -->
+                    <Border x:Name="OverlayBar"
+                            VerticalAlignment="Bottom"
+                            Padding="16,10"
+                            Background="#B30F172A"
+                            Visibility="Collapsed"
+                            Panel.ZIndex="5">
+                        <Grid>
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="Auto"/>
+                            </Grid.RowDefinitions>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto"/>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+                            <StackPanel Grid.Row="0" Grid.Column="0" Orientation="Horizontal" VerticalAlignment="Center">
+                                <Button Style="{StaticResource PlayerButtonStyle}" Content="上一条" Click="PreviousVideoButton_Click"/>
+                                <Button x:Name="OverlayPlayPauseButton"
+                                        Style="{StaticResource PlayerButtonStyle}"
+                                        MinWidth="80"
+                                        Content="▶ 播放"
+                                        Click="PlayPauseButton_Click"/>
+                                <Button Style="{StaticResource PlayerButtonStyle}" Content="下一条" Click="NextVideoButton_Click"/>
+                            </StackPanel>
+                            <StackPanel Grid.Row="0" Grid.Column="2" Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Center">
+                                <Button x:Name="OverlayMuteButton"
+                                        Style="{StaticResource IconButtonStyle}"
+                                        Content="🔊"
+                                        FontSize="16"
+                                        Click="MuteButton_Click"/>
+                                <Button x:Name="OverlaySpeedButton"
+                                        Style="{StaticResource PlayerButtonStyle}"
+                                        Content="1.0×"
+                                        Click="SpeedButton_Click"/>
+                                <Button Style="{StaticResource PlayerButtonStyle}"
+                                        Content="+ 分段"
+                                        Click="AddMarkerButton_Click"/>
+                                <Button Style="{StaticResource PlayerButtonStyle}"
+                                        Content="F6 面板"
+                                        Click="MarkerListButton_Click"/>
+                                <Button x:Name="OverlayFullscreenButton"
+                                        Style="{StaticResource PlayerButtonStyle}"
+                                        Content="⊡ 退出"
+                                        Click="FullscreenButton_Click"/>
+                            </StackPanel>
+                            <TextBlock x:Name="OverlayPositionText"
+                                       Grid.Row="1"
+                                       Grid.Column="0"
+                                       VerticalAlignment="Center" Margin="0,0,10,0"
+                                       FontSize="13" Foreground="#F1F5F9" Text="0:00"/>
+                            <Grid x:Name="OverlayTimelineHost"
+                                  Grid.Row="1"
+                                  Grid.Column="1"
+                                  Height="24"
+                                  Background="Transparent"
+                                  Cursor="Hand"
+                                  MouseEnter="OverlayTimelineHost_MouseEnter"
+                                  MouseLeave="OverlayTimelineHost_MouseLeave"
+                                  MouseMove="OverlayTimelineHost_MouseMove"
+                                  MouseLeftButtonDown="OverlayTimelineHost_MouseLeftButtonDown"
+                                  MouseLeftButtonUp="OverlayTimelineHost_MouseLeftButtonUp"
+                                  SizeChanged="OverlayTimelineHost_SizeChanged">
+                                <Border x:Name="OverlayTrackBg"
+                                        Height="4" VerticalAlignment="Center" CornerRadius="{StaticResource RadiusProgress}"
+                                        Background="#55FFFFFF"
+                                        IsHitTestVisible="False"/>
+                                <Border x:Name="OverlayTrackFill"
+                                        Height="4" VerticalAlignment="Center"
+                                        HorizontalAlignment="Left" Width="0" CornerRadius="{StaticResource RadiusProgress}"
+                                        Background="#E2E8F0"
+                                        IsHitTestVisible="False"/>
+                                <Canvas x:Name="OverlaySegmentMarkerLayer"
+                                        Background="{x:Null}"
+                                        Height="24"
+                                        ClipToBounds="True"
+                                        SizeChanged="OverlaySegmentMarkerLayer_SizeChanged"/>
+                                <Ellipse x:Name="OverlayThumb"
+                                         Width="14" Height="14"
+                                         HorizontalAlignment="Left" VerticalAlignment="Center"
+                                         Margin="-7,0,0,0"
+                                         Fill="#FFFFFF" Stroke="#66FFFFFF" StrokeThickness="1"
+                                         IsHitTestVisible="False"/>
+                                <Popup x:Name="OverlayTimelineHoverTip"
+                                       PlacementTarget="{Binding ElementName=OverlayTimelineHost}"
+                                       Placement="RelativePoint"
+                                       AllowsTransparency="True"
+                                       StaysOpen="True"
+                                       IsHitTestVisible="False">
+                                    <Border Background="#E60F172A" BorderBrush="#334155" BorderThickness="1"
+                                            CornerRadius="{StaticResource RadiusClip}" Padding="6,3">
+                                        <TextBlock x:Name="OverlayTimelineHoverTipText"
+                                                   Foreground="#F1F5F9" FontFamily="Consolas" FontSize="11"/>
+                                    </Border>
+                                </Popup>
+                            </Grid>
+                            <TextBlock x:Name="OverlayDurationText"
+                                       Grid.Row="1"
+                                       Grid.Column="2"
+                                       VerticalAlignment="Center" Margin="10,0,0,0"
+                                       FontSize="13" Foreground="#CBD5E1" Text="0:00"/>
+                        </Grid>
+                    </Border>
+
+                </Grid>
+            </vlc:VideoView.Content>
+        </vlc:VideoView>
+
+        <Border x:Name="LoadingOverlay"
+                Grid.Row="0"
+                Grid.Column="0"
+                Background="#000000"
+                Visibility="Visible"
+                Panel.ZIndex="3">
+            <StackPanel HorizontalAlignment="Center"
+                        VerticalAlignment="Center">
+                <TextBlock x:Name="LoadingTitleText"
+                           Text="正在加载视频..."
+                           Foreground="#F8FAFC"
+                           FontSize="15"
+                           FontWeight="SemiBold"
+                           HorizontalAlignment="Center"/>
+                <TextBlock x:Name="LoadingDetailText"
+                           Text="播放器正在准备解码器和视频流"
+                           Foreground="#94A3B8"
+                           FontSize="12"
+                           Margin="0,8,0,0"
+                           HorizontalAlignment="Center"/>
+            </StackPanel>
+        </Border>
+
+                    <Border x:Name="SidePanel"
+                            Grid.Row="0"
+                            Grid.Column="1"
+                            HorizontalAlignment="Stretch"
+                            VerticalAlignment="Stretch"
+                            Visibility="Collapsed"
+                            Background="#F20F172A"
+                            BorderBrush="#1E293B"
+                            BorderThickness="1,0,0,0"
+                            MouseLeave="SidePanel_MouseLeave"
+                            Panel.ZIndex="10">
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="*"/>
+                            </Grid.RowDefinitions>
+
+                            <Grid Grid.Row="0" Background="#1A0B1220" Margin="0,0,0,1">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="Auto"/>
+                                    <ColumnDefinition Width="Auto"/>
+                                    <ColumnDefinition Width="Auto"/>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="Auto"/>
+                                </Grid.ColumnDefinitions>
+                                <Button x:Name="TabSegment"
+                                        Grid.Column="0"
+                                        Style="{StaticResource SidePanelTabStyle}"
+                                        Tag="active"
+                                        Content="分段"
+                                        Click="TabSegment_Click"/>
+                                <Button x:Name="TabPlaylist"
+                                        Grid.Column="1"
+                                        Style="{StaticResource SidePanelTabStyle}"
+                                        Content="播放列表"
+                                        Click="TabPlaylist_Click"/>
+                                <Button x:Name="TabSettings"
+                                        Grid.Column="2"
+                                        Style="{StaticResource SidePanelTabStyle}"
+                                        Content="设置"
+                                        Click="TabSettings_Click"/>
+                                <Button x:Name="SidePanelCloseButton"
+                                        Grid.Column="3"
+                                        Style="{StaticResource SidePanelCloseStyle}"
+                                        Content="×"
+                                        Click="SidePanelCloseButton_Click"/>
+                            </Grid>
+
+                            <Grid Grid.Row="1" Grid.RowSpan="2">
+                                <Grid x:Name="PlaylistPanel" Visibility="Collapsed">
+                                    <Grid.RowDefinitions>
+                                        <RowDefinition Height="Auto"/>
+                                        <RowDefinition Height="*"/>
+                                        <RowDefinition Height="Auto"/>
+                                    </Grid.RowDefinitions>
+                                    <DockPanel Grid.Row="0" Margin="14,10,14,8" LastChildFill="True">
+                                        <Button x:Name="PlaylistViewToggle"
+                                                DockPanel.Dock="Right"
+                                                Style="{StaticResource IconButtonStyle}"
+                                                MinWidth="34" Height="26"
+                                                Margin="8,0,0,0"
+                                                Content="▦"
+                                                ToolTip="切换 列表 / 瀑布流"
+                                                Click="PlaylistViewToggle_Click"/>
+                                        <TextBlock x:Name="PlaylistSummaryText"
+                                                   Foreground="#94A3B8"
+                                                   FontSize="11"
+                                                   Text="当前队列"/>
+                                    </DockPanel>
+                                    <Border x:Name="SidePanelPlaylistListContainer"
+                                            Grid.Row="1" Margin="8,0,8,8" Background="#0B1220" CornerRadius="{StaticResource RadiusControl}">
+                                        <ListBox x:Name="SidePanelPlaylistList"
+                                                 Background="Transparent"
+                                                 BorderThickness="0"
+                                                 Foreground="#F1F5F9"
+                                                 HorizontalContentAlignment="Stretch"
+                                                 MouseDoubleClick="SidePanelPlaylistList_MouseDoubleClick"
+                                                 KeyDown="SidePanelPlaylistList_KeyDown">
+                                            <ListBox.ItemTemplate>
+                                                <DataTemplate>
+                                                    <Grid Margin="2,4">
+                                                        <Grid.ContextMenu>
+                                                            <ContextMenu>
+                                                                <MenuItem Header="播放此项"
+                                                                          Click="OpenPlaylistItemMenu_Click"
+                                                                          CommandParameter="{Binding}"/>
+                                                            </ContextMenu>
+                                                        </Grid.ContextMenu>
+                                                        <Grid.ColumnDefinitions>
+                                                            <ColumnDefinition Width="36"/>
+                                                            <ColumnDefinition Width="*"/>
+                                                            <ColumnDefinition Width="Auto"/>
+                                                        </Grid.ColumnDefinitions>
+                                                        <TextBlock Grid.Column="0"
+                                                                   Text="{Binding Index}"
+                                                                   Foreground="{Binding AccentBrush}"
+                                                                   FontFamily="Consolas"
+                                                                   FontSize="12"
+                                                                   VerticalAlignment="Center"/>
+                                                        <StackPanel Grid.Column="1">
+                                                            <TextBlock Text="{Binding Title}"
+                                                                       FontWeight="{Binding FontWeight}"
+                                                                       Foreground="#F1F5F9"
+                                                                       FontSize="13"
+                                                                       TextTrimming="CharacterEllipsis"/>
+                                                            <TextBlock Text="{Binding StatusText}"
+                                                                       Foreground="#64748B"
+                                                                       FontSize="11"
+                                                                       Margin="0,2,0,0"/>
+                                                        </StackPanel>
+                                                        <TextBlock Grid.Column="2"
+                                                                   Text="{Binding DurationText}"
+                                                                   Foreground="#94A3B8"
+                                                                   FontFamily="Consolas"
+                                                                   FontSize="11"
+                                                                   VerticalAlignment="Center"/>
+                                                    </Grid>
+                                                </DataTemplate>
+                                            </ListBox.ItemTemplate>
+                                        </ListBox>
+                                    </Border>
+                                    <Border x:Name="SidePanelPlaylistGridContainer"
+                                            Grid.Row="1"
+                                            Margin="8,0,8,8"
+                                            Background="#0B1220"
+                                            CornerRadius="{StaticResource RadiusControl}"
+                                            Visibility="Collapsed">
+                                        <ListBox x:Name="SidePanelPlaylistGrid"
+                                                 Background="Transparent"
+                                                 BorderThickness="0"
+                                                 Foreground="#F1F5F9"
+                                                 ScrollViewer.HorizontalScrollBarVisibility="Disabled"
+                                                 MouseDoubleClick="SidePanelPlaylistList_MouseDoubleClick"
+                                                 KeyDown="SidePanelPlaylistList_KeyDown">
+                                            <ListBox.ItemsPanel>
+                                                <ItemsPanelTemplate>
+                                                    <WrapPanel Orientation="Horizontal" ItemWidth="150" ItemHeight="120"/>
+                                                </ItemsPanelTemplate>
+                                            </ListBox.ItemsPanel>
+                                            <ListBox.ItemTemplate>
+                                                <DataTemplate>
+                                                    <Grid Width="146" Margin="2">
+                                                        <Grid.ContextMenu>
+                                                            <ContextMenu>
+                                                                <MenuItem Header="播放此项"
+                                                                          Click="OpenPlaylistItemMenu_Click"
+                                                                          CommandParameter="{Binding}"/>
+                                                            </ContextMenu>
+                                                        </Grid.ContextMenu>
+                                                        <Grid.RowDefinitions>
+                                                            <RowDefinition Height="78"/>
+                                                            <RowDefinition Height="*"/>
+                                                        </Grid.RowDefinitions>
+                                                        <Border Grid.Row="0" CornerRadius="{StaticResource RadiusClip}" ClipToBounds="True"
+                                                                Background="#0F172A" BorderBrush="#1E293B" BorderThickness="1">
+                                                            <Grid>
+                                                                <TextBlock HorizontalAlignment="Center" VerticalAlignment="Center"
+                                                                           Text="🎬" FontSize="22" Foreground="#334155"
+                                                                           Visibility="{Binding ThumbnailPlaceholderVisibility}"/>
+                                                                <Image Source="{Binding Thumbnail}" Stretch="UniformToFill"
+                                                                       RenderOptions.BitmapScalingMode="HighQuality"/>
+                                                            </Grid>
+                                                        </Border>
+                                                        <StackPanel Grid.Row="1" Margin="0,4,0,0">
+                                                            <TextBlock Text="{Binding Title}"
+                                                                       FontWeight="{Binding FontWeight}"
+                                                                       Foreground="#F1F5F9"
+                                                                       FontSize="11"
+                                                                       TextTrimming="CharacterEllipsis"
+                                                                       ToolTip="{Binding Title}"/>
+                                                            <TextBlock Text="{Binding DurationText}"
+                                                                       Foreground="#64748B"
+                                                                       FontFamily="Consolas"
+                                                                       FontSize="10"
+                                                                       Margin="0,1,0,0"/>
+                                                        </StackPanel>
+                                                    </Grid>
+                                                </DataTemplate>
+                                            </ListBox.ItemTemplate>
+                                        </ListBox>
+                                    </Border>
+                                    <StackPanel Grid.Row="2" Orientation="Horizontal" HorizontalAlignment="Right" Margin="8,0,8,10">
+                                        <Button Style="{StaticResource PlayerButtonStyle}" Content="上一条" Click="PreviousVideoButton_Click"/>
+                                        <Button Style="{StaticResource PlayerButtonStyle}" Content="下一条" Click="NextVideoButton_Click"/>
+                                    </StackPanel>
+                                </Grid>
+
+                                <Grid x:Name="SegmentPanel" Visibility="Visible">
+                                    <Grid.RowDefinitions>
+                                        <RowDefinition Height="Auto"/>
+                                        <RowDefinition Height="*"/>
+                                    </Grid.RowDefinitions>
+                                    <DockPanel Grid.Row="0" Margin="14,10,14,8">
+                                        <TextBlock x:Name="MarkerPanelSummaryText"
+                                                   DockPanel.Dock="Right"
+                                                   Foreground="#FBBF24"
+                                                   FontSize="11"
+                                                   FontWeight="SemiBold"/>
+                                        <TextBlock Foreground="#94A3B8"
+                                                   FontSize="11"
+                                                   Text="双击跳转 / Enter 跳转 / Delete 删除 / 点编辑可修改标题和备注"/>
+                                    </DockPanel>
+                                    <Border Grid.Row="1" Margin="8,0,8,8" Background="#0B1220" CornerRadius="{StaticResource RadiusControl}">
+                                        <ListBox x:Name="SidePanelMarkerList"
+                                                 Background="Transparent"
+                                                 BorderThickness="0"
+                                                 Foreground="#F1F5F9"
+                                                 HorizontalContentAlignment="Stretch"
+                                                 ScrollViewer.HorizontalScrollBarVisibility="Disabled"
+                                                 PreviewMouseRightButtonDown="SidePanelMarkerList_PreviewMouseRightButtonDown"
+                                                 MouseDoubleClick="SidePanelMarkerList_MouseDoubleClick"
+                                                 KeyDown="SidePanelMarkerList_KeyDown">
+                                            <ListBox.ItemTemplate>
+                                                <DataTemplate>
+                                                    <Grid ContextMenuOpening="MarkerRow_ContextMenuOpening">
+                                                        <Grid.ContextMenu>
+                                                            <ContextMenu>
+                                                                <MenuItem Header="跳转到此处"
+                                                                          Click="SidePanelJumpMenu_Click"
+                                                                          CommandParameter="{Binding}"/>
+                                                                <MenuItem Header="重命名 / 编辑..."
+                                                                          Click="SidePanelEditMenu_Click"
+                                                                          CommandParameter="{Binding}"/>
+                                                                <Separator/>
+                                                                <MenuItem Header="删除"
+                                                                          Click="SidePanelDeleteMenu_Click"
+                                                                          CommandParameter="{Binding}"/>
+                                                            </ContextMenu>
+                                                        </Grid.ContextMenu>
+                                                        <Grid.ColumnDefinitions>
+                                                            <ColumnDefinition Width="5"/>
+                                                            <ColumnDefinition Width="8"/>
+                                                            <ColumnDefinition Width="84"/>
+                                                            <ColumnDefinition Width="8"/>
+                                                            <ColumnDefinition Width="*"/>
+                                                            <ColumnDefinition Width="Auto"/>
+                                                        </Grid.ColumnDefinitions>
+                                                        <Border Grid.Column="0" Width="4" CornerRadius="{StaticResource RadiusScrollThumb}"
+                                                                Background="{Binding ColorBrush}"
+                                                                VerticalAlignment="Stretch"/>
+                                                        <Border Grid.Column="2" Width="80" Height="45"
+                                                                Background="#0F172A" CornerRadius="{StaticResource RadiusClip}"
+                                                                ClipToBounds="True">
+                                                            <Grid>
+                                                                <TextBlock Text="{Binding Marker.TimeText}"
+                                                                           Foreground="#475569" FontFamily="Consolas" FontSize="11"
+                                                                           HorizontalAlignment="Center" VerticalAlignment="Center"
+                                                                           Visibility="{Binding ThumbnailPlaceholderVisibility}"/>
+                                                                <Image Source="{Binding Thumbnail}" Stretch="UniformToFill"/>
+                                                            </Grid>
+                                                        </Border>
+                                                        <StackPanel Grid.Column="4" VerticalAlignment="Center">
+                                                            <TextBlock Text="{Binding Marker.TimeText}"
+                                                                       Foreground="#FBBF24" FontFamily="Consolas" FontSize="11"
+                                                                       Margin="0,0,0,2"/>
+                                                            <TextBlock Text="{Binding Marker.Title}"
+                                                                       Foreground="#F1F5F9" FontSize="13"
+                                                                       TextTrimming="CharacterEllipsis"/>
+                                                            <TextBlock Text="{Binding Marker.Note}"
+                                                                       Foreground="#94A3B8" FontSize="11"
+                                                                       Margin="0,2,0,0"
+                                                                       TextTrimming="CharacterEllipsis"
+                                                                       Visibility="{Binding NoteVisibility}"/>
+                                                        </StackPanel>
+                                                        <Button Grid.Column="5"
+                                                                Content="编辑"
+                                                                Margin="8,0,0,0"
+                                                                Padding="8,4"
+                                                                MinWidth="0"
+                                                                VerticalAlignment="Center"
+                                                                Style="{StaticResource PlayerButtonStyle}"
+                                                                Click="SidePanelEditMenu_Click"
+                                                                CommandParameter="{Binding}"/>
+                                                    </Grid>
+                                                </DataTemplate>
+                                            </ListBox.ItemTemplate>
+                                        </ListBox>
+                                    </Border>
+                                </Grid>
+
+                                <StackPanel x:Name="SettingsPanel" Visibility="Collapsed" Margin="14,12,14,0">
+                                    <TextBlock Foreground="#94A3B8" FontSize="11" Text="播放器设置与常用动作"/>
+                                    <Button Style="{StaticResource PlayerButtonStyle}" Content="切换全屏" Margin="0,12,0,0" Click="SettingsToggleFullscreen_Click"/>
+                                    <Button Style="{StaticResource PlayerButtonStyle}" Content="创建分段并编辑" Margin="0,8,0,0" Click="SettingsCreateMarker_Click"/>
+                                    <Button Style="{StaticResource PlayerButtonStyle}" Content="打开文件位置" Margin="0,8,0,0" Click="SettingsOpenFolder_Click"/>
+                                    <TextBlock Margin="0,18,0,0" Foreground="#64748B" FontSize="11" TextWrapping="Wrap"
+                                               Text="快捷键：W 全屏，F6 显示/隐藏侧边面板，M 创建分段标记，Shift+M 创建并编辑，逗号/句号在分段标记间跳转。"/>
+                                </StackPanel>
+                            </Grid>
+                        </Grid>
+                    </Border>
+
+                    <Thumb x:Name="SidePanelWidthSplitter"
+                           Grid.Row="0"
+                           Grid.Column="1"
+                           HorizontalAlignment="Left"
+                           VerticalAlignment="Stretch"
+                           Width="8"
+                           Cursor="SizeWE"
+                           Visibility="{Binding Visibility, ElementName=SidePanel}"
+                           DragStarted="PlayerPanelSplitter_DragStarted"
+                           DragDelta="PlayerPanelSplitter_DragDelta"
+                           DragCompleted="PlayerPanelSplitter_DragCompleted"
+                           Panel.ZIndex="90">
+                        <Thumb.Template>
+                            <ControlTemplate TargetType="Thumb">
+                                <Border Background="#01000000"/>
+                            </ControlTemplate>
+                        </Thumb.Template>
+                    </Thumb>
+
+                    <Border x:Name="SidePanelHoverZone"
+                            Grid.Row="0"
+                            Grid.Column="0"
+                            Grid.ColumnSpan="2"
+                            HorizontalAlignment="Right"
+                            Width="96"
+                            Background="#01000000"
+                            Visibility="Collapsed"
+                            MouseEnter="SidePanelHoverZone_MouseEnter"
+                            Panel.ZIndex="9"/>
+        <Thumb x:Name="BottomBarHeightSplitter"
+               Grid.Row="1"
+               Grid.Column="0"
+               Grid.ColumnSpan="2"
+               VerticalAlignment="Top"
+               HorizontalAlignment="Stretch"
+               Height="6"
+               Cursor="SizeNS"
+               DragStarted="PlayerPanelSplitter_DragStarted"
+               DragDelta="PlayerPanelSplitter_DragDelta"
+               DragCompleted="PlayerPanelSplitter_DragCompleted"
+               Panel.ZIndex="41">
+            <Thumb.Template>
+                <ControlTemplate TargetType="Thumb">
+                    <Border Background="#01000000"/>
+                </ControlTemplate>
+            </Thumb.Template>
+        </Thumb>
+        <Border x:Name="BottomBar"
+                Grid.Row="1"
+                Grid.Column="0"
+                Grid.ColumnSpan="2"
+                Panel.ZIndex="20"
+                Padding="16,8,16,8"
+                Background="#0F172A"
+                BorderBrush="#1F2937"
+                BorderThickness="0,1,0,0">
+            <StackPanel>
+                <!-- 进度行 -->
+                <Grid Margin="0,0,0,6">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="Auto"/>
+                    </Grid.ColumnDefinitions>
+                    <TextBlock x:Name="PositionText"
+                               Grid.Column="0"
+                               VerticalAlignment="Center"
+                               Margin="0,0,10,0"
+                               FontSize="13"
+                               Foreground="#CBD5E1"
+                               Text="0:00"/>
+                    <!-- 纯自定义进度条：TimelineHost 是唯一鼠标命中入口；
+                         所有视觉子元素 IsHitTestVisible=False；marker 例外，子 Border 自身命中并 e.Handled=true 阻止冒泡。 -->
+                    <Grid x:Name="TimelineHost" Grid.Column="1"
+                          Height="20"
+                          Background="Transparent"
+                          Cursor="Hand"
+                          MouseEnter="TimelineHost_MouseEnter"
+                          MouseLeave="TimelineHost_MouseLeave"
+                          MouseMove="TimelineHost_MouseMove"
+                          MouseLeftButtonDown="TimelineHost_MouseLeftButtonDown"
+                          MouseLeftButtonUp="TimelineHost_MouseLeftButtonUp"
+                          SizeChanged="TimelineHost_SizeChanged">
+                        <Border x:Name="TimelineTrackBg"
+                                Height="4" VerticalAlignment="Center" CornerRadius="{StaticResource RadiusProgress}"
+                                Background="#33FFFFFF"
+                                IsHitTestVisible="False"/>
+                        <Border x:Name="TimelineTrackFill"
+                                Height="4" VerticalAlignment="Center"
+                                HorizontalAlignment="Left" Width="0" CornerRadius="{StaticResource RadiusProgress}"
+                                Background="#E2E8F0"
+                                IsHitTestVisible="False"/>
+                        <Canvas x:Name="SegmentMarkerLayer"
+                                Background="{x:Null}"
+                                Height="20"
+                                ClipToBounds="True"
+                                SizeChanged="SegmentMarkerLayer_SizeChanged"/>
+                        <Ellipse x:Name="TimelineThumb"
+                                 Width="14" Height="14"
+                                 HorizontalAlignment="Left" VerticalAlignment="Center"
+                                 Margin="-7,0,0,0"
+                                 Fill="#FFFFFF" Stroke="#66FFFFFF" StrokeThickness="1"
+                                 IsHitTestVisible="False"/>
+                        <Popup x:Name="TimelineHoverTip"
+                               PlacementTarget="{Binding ElementName=TimelineHost}"
+                               Placement="RelativePoint"
+                               AllowsTransparency="True"
+                               StaysOpen="True"
+                               IsHitTestVisible="False">
+                            <Border Background="#E60F172A" BorderBrush="#334155" BorderThickness="1"
+                                    CornerRadius="{StaticResource RadiusClip}" Padding="6,3">
+                                <TextBlock x:Name="TimelineHoverTipText"
+                                           Foreground="#F1F5F9" FontFamily="Consolas" FontSize="11"/>
+                            </Border>
+                        </Popup>
+                    </Grid>
+                    <TextBlock x:Name="DurationText"
+                               Grid.Column="2"
+                               VerticalAlignment="Center"
+                               Margin="10,0,0,0"
+                               FontSize="13"
+                               Foreground="#94A3B8"
+                               Text="0:00"/>
+                </Grid>
+
+                <!-- 按钮行：窗口较窄时允许自然换行，避免左右两组按钮互相挤压错位。 -->
+                <WrapPanel HorizontalAlignment="Center"
+                           VerticalAlignment="Center">
+                    <Button x:Name="BackButton"
+                            Style="{StaticResource PlayerButtonStyle}"
+                            Content="← 返回"
+                            Click="BackButton_Click"/>
+                    <Button Style="{StaticResource PlayerButtonStyle}"
+                            Content="上一条"
+                            Click="PreviousVideoButton_Click"/>
+                    <Button x:Name="PlayPauseButton"
+                            Style="{StaticResource PlayerButtonStyle}"
+                            MinWidth="80"
+                            Content="▶ 播放"
+                            Click="PlayPauseButton_Click"/>
+                    <Button Style="{StaticResource PlayerButtonStyle}"
+                            Content="下一条"
+                            Click="NextVideoButton_Click"/>
+                    <Button x:Name="MuteButton"
+                            Style="{StaticResource IconButtonStyle}"
+                            Content="🔊"
+                            FontSize="16"
+                            Click="MuteButton_Click"/>
+                    <Slider x:Name="VolumeBar"
+                            Style="{StaticResource VolumeSliderStyle}"
+                            Width="80"
+                            VerticalAlignment="Center"
+                            Minimum="0" Maximum="100"
+                            Value="100"
+                            Focusable="False"
+                            ValueChanged="VolumeBar_ValueChanged"/>
+                    <TextBlock x:Name="VolumeText"
+                               VerticalAlignment="Center"
+                               Margin="6,0,12,0"
+                               FontSize="12"
+                               Foreground="#94A3B8"
+                               Text="100%"/>
+                    <Button x:Name="AddMarkerButton"
+                            Style="{StaticResource PlayerButtonStyle}"
+                            Content="+ 分段"
+                            ToolTip="在当前时间点创建分段 (M)"
+                            Click="AddMarkerButton_Click"/>
+                    <Button x:Name="MarkerListButton"
+                            Style="{StaticResource PlayerButtonStyle}"
+                            Content="F6 面板"
+                            Click="MarkerListButton_Click"/>
+                    <Button x:Name="SpeedButton"
+                            Style="{StaticResource PlayerButtonStyle}"
+                            Content="1.0×"
+                            Click="SpeedButton_Click"/>
+                    <Button x:Name="FullscreenButton"
+                            Style="{StaticResource PlayerButtonStyle}"
+                            Content="⛶ 全屏"
+                            Click="FullscreenButton_Click"/>
+                </WrapPanel>
+            </StackPanel>
+        </Border>
+    </Grid>
+</Window>

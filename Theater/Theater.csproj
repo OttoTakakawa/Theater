@@ -1,0 +1,58 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net8.0-windows</TargetFramework>
+    <ApplicationIcon>AppIcon.ico</ApplicationIcon>
+    <AssemblyName>Theater</AssemblyName>
+    <RootNamespace>Theater</RootNamespace>
+    <Version>0.1.1.27</Version>
+    <AssemblyVersion>0.1.1.27</AssemblyVersion>
+    <FileVersion>0.1.1.27</FileVersion>
+    <InformationalVersion>0.1.1.27</InformationalVersion>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <UseWPF>true</UseWPF>
+    <UseWindowsForms>true</UseWindowsForms>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Resource Include="..\icon.png" Link="Assets\icon.png" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Data.Sqlite" Version="8.0.11" />
+    <PackageReference Include="LibVLCSharp.WPF" Version="3.9.3" />
+    <PackageReference Include="VideoLAN.LibVLC.Windows" Version="3.0.21" />
+  </ItemGroup>
+
+  <!-- Copy native libvlc DLLs to output 闂?LibVLCSharp loads them from disk -->
+  <Target Name="CopyLibVLCDlls" AfterTargets="Publish">
+    <ItemGroup>
+      <LibVLCDlls Include="$(NuGetPackageRoot)videolan.libvlc.windows\3.0.21\build\x64\*.dll" />
+      <LibVLCPlugins Include="$(NuGetPackageRoot)videolan.libvlc.windows\3.0.21\build\x64\plugins\**\*" />
+    </ItemGroup>
+    <Copy SourceFiles="@(LibVLCDlls)" DestinationFolder="$(PublishDir)\libvlc\win-x64" />
+    <Copy SourceFiles="@(LibVLCPlugins)" DestinationFolder="$(PublishDir)\libvlc\win-x64\plugins\%(RecursiveDir)" />
+  </Target>
+
+  <!-- Copy NSFW tag presets to output (local-only, gitignored) -->
+  <Target Name="CopyNsfwPresetsBuild" AfterTargets="Build" Condition="Exists('Data\nsfw_tag_presets.json')">
+    <MakeDir Directories="$(OutputPath)Theater_Data" Condition="!Exists('$(OutputPath)Theater_Data')" />
+    <Copy SourceFiles="Data\nsfw_tag_presets.json"
+          DestinationFolder="$(OutputPath)Theater_Data"
+          SkipUnchangedFiles="true" />
+  </Target>
+
+  <Target Name="CopyNsfwPresetsPublish" AfterTargets="Publish" Condition="Exists('Data\nsfw_tag_presets.json')">
+    <MakeDir Directories="$(PublishDir)Theater_Data" Condition="!Exists('$(PublishDir)Theater_Data')" />
+    <Copy SourceFiles="Data\nsfw_tag_presets.json"
+          DestinationFolder="$(PublishDir)Theater_Data"
+          SkipUnchangedFiles="true" />
+  </Target>
+
+  <Target Name="PublishUpdater" AfterTargets="Publish" Condition="'$(RuntimeIdentifier)' == 'win-x64' and '$(PublishUpdater)' != 'false'">
+    <Exec Command="dotnet publish &quot;$(MSBuildProjectDirectory)\..\Theater.Updater\Theater.Updater.csproj&quot; -c $(Configuration) -r win-x64 --self-contained true -p:PublishSingleFile=true -p:PublishUpdater=false -o &quot;$(PublishDir)Updater&quot;" />
+  </Target>
+
+</Project>

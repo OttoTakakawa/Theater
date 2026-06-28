@@ -7,7 +7,7 @@ from PIL import Image as _PILImage
 
 ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 SRC = os.path.join(ROOT, "icon.png")
-DST = os.path.join(ROOT, "MangaReader.Native", "AppIcon.ico")
+DST = os.path.join(ROOT, "Theater", "AppIcon.ico")
 SIZES = [256, 64, 48, 32, 16]
 
 
