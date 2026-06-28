@@ -1776,11 +1776,27 @@ public partial class MainWindow : Window
     {
         bool hasVideo = _currentBook?.HasVideo ?? false;
         bool hasImages = _currentBook?.HasImages ?? false;
+        int videoCount = _currentBook?.VideoCount ?? 0;
 
+        // 视频按钮：多视频显示"视频集"，单视频显示"视频"，无视频隐藏
         if (VideoTabButton is not null)
+        {
+            VideoTabButton.Visibility = hasVideo ? Visibility.Visible : Visibility.Collapsed;
+            VideoTabButton.Content = videoCount > 1 ? "视频集" : "视频";
             TabActive.SetIsActive(VideoTabButton, _activeDetailTab == "video");
+        }
+        // 图集按钮：有图集才显示
         if (GalleryTabButton is not null)
+        {
+            GalleryTabButton.Visibility = hasImages ? Visibility.Visible : Visibility.Collapsed;
             TabActive.SetIsActive(GalleryTabButton, _activeDetailTab == "gallery");
+        }
+        // 单视频且无图集时隐藏整个 Tab bar（无需切换）
+        if (DetailTabBar is not null)
+        {
+            bool showTabBar = (hasVideo && videoCount > 1) || hasImages;
+            DetailTabBar.Visibility = showTabBar ? Visibility.Visible : Visibility.Collapsed;
+        }
 
         if (DetailVideoContent is not null)
             DetailVideoContent.Visibility = _activeDetailTab == "video"
@@ -4333,8 +4349,12 @@ public partial class MainWindow : Window
         BookAuthorFilterButton.Content = string.IsNullOrWhiteSpace(book.Author) ? "作者 未指定" : $"作者 {book.Author}";
         BookAuthorFilterButton.IsEnabled = !string.IsNullOrWhiteSpace(book.Author);
         // Meta 行：视频作品显示视频信息，传统漫画显示页数
+        // 单视频不显示视频数/图集数，只有合集才显示
+        var isVideoCollection = book.HasVideo && (book.VideoCount > 1 || book.HasImages);
         BookMetaLineText.Text = book.HasVideo
-            ? $"{book.VideoCountText}" + (book.HasImages ? $" · {book.ImageCountText}" : "")
+            ? (isVideoCollection
+                ? $"{book.VideoCountText}" + (book.HasImages ? $" · {book.ImageCountText}" : "")
+                : "")
             : $"{book.PageCount} 页";
 
         // 标签胶囊
@@ -4355,7 +4375,8 @@ public partial class MainWindow : Window
         {
             MetaPageCountLabelText.Text = "视频";
             MetaCoverPageLabelText.Text = "时长";
-            ApplyMetaValue(MetaPageCountValueText, book.VideoCountText, forceFilled: true);
+            // 单视频不显示"1个视频"，合集才显示视频数
+            ApplyMetaValue(MetaPageCountValueText, isVideoCollection ? book.VideoCountText : "", forceFilled: true);
             ApplyMetaValue(MetaCoverPageValueText, book.VideoDurationText, forceFilled: true);
         }
         else
@@ -4373,16 +4394,20 @@ public partial class MainWindow : Window
         {
             var parts = new List<string>();
             if (!string.IsNullOrWhiteSpace(book.Author)) parts.Add(book.Author);
-            if (book.HasVideo) parts.Add(book.VideoCountText);
+            // 单视频不显示视频数/图集数，只有合集才显示
+            if (isVideoCollection) parts.Add(book.VideoCountText);
             if (book.DurationMs > 0) parts.Add(book.VideoDurationText);
-            if (book.HasImages) parts.Add(book.ImageCountText);
+            if (isVideoCollection && book.HasImages) parts.Add(book.ImageCountText);
             if (!string.IsNullOrWhiteSpace(book.ProducedAt)) parts.Add(book.ProducedAt);
             DetailInfoBarText.Text = string.Join(" · ", parts);
         }
 
         // 视频分区（简化为meta线）
+        // 单视频只显示 🎬 图标，合集才显示视频数
         BookMetaLineText.Text = book.HasVideo
-            ? (book.VideoCount > 0 ? $"🎬 {book.VideoCountText}" : "🎬 视频暂时不见了")
+            ? (book.VideoCount > 0
+                ? (isVideoCollection ? $"🎬 {book.VideoCountText}" : "🎬")
+                : "🎬 视频暂时不见了")
             : $"{book.PageCount} 页";
 
         BookAuthorText.Text = string.IsNullOrWhiteSpace(book.Author) ? "未指定作者" : book.Author;

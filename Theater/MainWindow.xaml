@@ -2236,9 +2236,8 @@
                 <Grid.RowDefinitions>
                     <RowDefinition Height="Auto"/>     <!-- 0: 顶部栏 -->
                     <RowDefinition Height="Auto"/>     <!-- 1: Cover + Title/Author -->
-                    <RowDefinition Height="Auto"/>     <!-- 2: Tab bar -->
-                    <RowDefinition Height="*"/>        <!-- 3: Tab content -->
-                    <RowDefinition Height="Auto"/>     <!-- 4: Bottom info bar -->
+                    <RowDefinition Height="*"/>        <!-- 2: 内容区 -->
+                    <RowDefinition Height="Auto"/>     <!-- 3: Bottom info bar -->
                 </Grid.RowDefinitions>
 
                 <!-- 0: 顶部栏 (复用现有) -->
@@ -2321,53 +2320,8 @@
                                HorizontalAlignment="Center" TextTrimming="CharacterEllipsis"/>
                 </StackPanel>
 
-                <!-- 2: Tab bar -->
-                <StackPanel Grid.Row="2" Orientation="Horizontal" Margin="0,0,0,8" HorizontalAlignment="Center"
-                            x:Name="DetailTabBar">
-                    <Button x:Name="VideoTabButton" Tag="video" Content="视频集"
-                            Click="DetailTab_Click"
-                            MinWidth="80" Height="32" Padding="16,0" Margin="0,0,8,0"
-                            Focusable="False" Cursor="Hand"
-                            Background="Transparent" BorderBrush="Transparent" BorderThickness="0,0,0,2"
-                            Foreground="{DynamicResource Brush.TextMuted}" FontSize="13" FontWeight="SemiBold">
-                        <Button.Style>
-                            <Style TargetType="Button">
-                                <Setter Property="Background" Value="Transparent"/>
-                                <Setter Property="BorderBrush" Value="Transparent"/>
-                                <Setter Property="Foreground" Value="{DynamicResource Brush.TextMuted}"/>
-                                <Style.Triggers>
-                                    <Trigger Property="local:TabActive.IsActive" Value="True">
-                                        <Setter Property="Foreground" Value="{DynamicResource Brush.TextPrimary}"/>
-                                        <Setter Property="BorderBrush" Value="{DynamicResource Brush.TextPrimary}"/>
-                                    </Trigger>
-                                </Style.Triggers>
-                            </Style>
-                        </Button.Style>
-                    </Button>
-                    <Button x:Name="GalleryTabButton" Tag="gallery" Content="图集"
-                            Click="DetailTab_Click"
-                            MinWidth="80" Height="32" Padding="16,0"
-                            Focusable="False" Cursor="Hand"
-                            Background="Transparent" BorderBrush="Transparent" BorderThickness="0,0,0,2"
-                            Foreground="{DynamicResource Brush.TextMuted}" FontSize="13" FontWeight="SemiBold">
-                        <Button.Style>
-                            <Style TargetType="Button">
-                                <Setter Property="Background" Value="Transparent"/>
-                                <Setter Property="BorderBrush" Value="Transparent"/>
-                                <Setter Property="Foreground" Value="{DynamicResource Brush.TextMuted}"/>
-                                <Style.Triggers>
-                                    <Trigger Property="local:TabActive.IsActive" Value="True">
-                                        <Setter Property="Foreground" Value="{DynamicResource Brush.TextPrimary}"/>
-                                        <Setter Property="BorderBrush" Value="{DynamicResource Brush.TextPrimary}"/>
-                                    </Trigger>
-                                </Style.Triggers>
-                            </Style>
-                        </Button.Style>
-                    </Button>
-                </StackPanel>
-
-                <!-- 3: Tab content (视频列表 / 图集列表) -->
-                <ScrollViewer Grid.Row="3" VerticalScrollBarVisibility="Auto"
+                <!-- 2: 内容区 -->
+                <ScrollViewer Grid.Row="2" VerticalScrollBarVisibility="Auto"
                               PreviewMouseWheel="FastVerticalScrollViewer_PreviewMouseWheel">
                     <StackPanel>
                         <!-- 旧只读信息面板 (条件显示) -->
@@ -2375,10 +2329,10 @@
                             <WrapPanel Margin="0,0,0,10" VerticalAlignment="Center">
                                 <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Margin="0,0,12,0">
                                     <StackPanel x:Name="RatingStarsHost" Orientation="Horizontal" VerticalAlignment="Center" Margin="0,0,12,0"/>
-                                    <Button x:Name="ToggleFavoriteButton" Content="☆ 收藏" Click="ToggleFavorite_Click" Style="{StaticResource DetailTopBarFavoriteButton}"/>
+                                    <Button x:Name="ToggleFavoriteButton" Content="☆ 收藏" Click="ToggleFavorite_Click" Style="{StaticResource DetailTopBarFavoriteButton}" Height="36" MinHeight="36"/>
                                 </StackPanel>
                                 <Button x:Name="BookAuthorFilterButton" Click="DetailAuthorFilter_Click"
-                                        Style="{StaticResource DetailHeroSecondaryButton}" VerticalAlignment="Center" Margin="0,0,8,8"/>
+                                        Style="{StaticResource DetailHeroSecondaryButton}" VerticalAlignment="Center" Margin="0,0,8,8" Height="36" MinHeight="36"/>
                                 <Border Height="36" Padding="12,0" Margin="0,0,8,8"
                                         CornerRadius="{StaticResource RadiusControl}"
                                         Background="{DynamicResource Brush.SurfaceMuted}"
@@ -2457,6 +2411,50 @@
                                     <TextBlock x:Name="MetaImportedAtValueText" Grid.Row="2" Grid.Column="4" Style="{StaticResource DetailMetaValueText}"/>
                                 </Grid>
                             </StackPanel>
+                        </StackPanel>
+
+                        <!-- Tab bar (切换视频/图集) -->
+                        <StackPanel x:Name="DetailTabBar" Orientation="Horizontal" Margin="0,4,0,8" HorizontalAlignment="Center">
+                            <Button x:Name="VideoTabButton" Tag="video" Content="视频集"
+                                    Click="DetailTab_Click"
+                                    MinWidth="80" Height="36" Padding="16,0" Margin="0,0,8,0"
+                                    Focusable="False" Cursor="Hand"
+                                    Background="Transparent" BorderBrush="Transparent" BorderThickness="0,0,0,2"
+                                    Foreground="{DynamicResource Brush.TextMuted}" FontSize="13" FontWeight="SemiBold">
+                                <Button.Style>
+                                    <Style TargetType="Button">
+                                        <Setter Property="Background" Value="Transparent"/>
+                                        <Setter Property="BorderBrush" Value="Transparent"/>
+                                        <Setter Property="Foreground" Value="{DynamicResource Brush.TextMuted}"/>
+                                        <Style.Triggers>
+                                            <Trigger Property="local:TabActive.IsActive" Value="True">
+                                                <Setter Property="Foreground" Value="{DynamicResource Brush.TextPrimary}"/>
+                                                <Setter Property="BorderBrush" Value="{DynamicResource Brush.TextPrimary}"/>
+                                            </Trigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </Button.Style>
+                            </Button>
+                            <Button x:Name="GalleryTabButton" Tag="gallery" Content="图集"
+                                    Click="DetailTab_Click"
+                                    MinWidth="80" Height="36" Padding="16,0"
+                                    Focusable="False" Cursor="Hand"
+                                    Background="Transparent" BorderBrush="Transparent" BorderThickness="0,0,0,2"
+                                    Foreground="{DynamicResource Brush.TextMuted}" FontSize="13" FontWeight="SemiBold">
+                                <Button.Style>
+                                    <Style TargetType="Button">
+                                        <Setter Property="Background" Value="Transparent"/>
+                                        <Setter Property="BorderBrush" Value="Transparent"/>
+                                        <Setter Property="Foreground" Value="{DynamicResource Brush.TextMuted}"/>
+                                        <Style.Triggers>
+                                            <Trigger Property="local:TabActive.IsActive" Value="True">
+                                                <Setter Property="Foreground" Value="{DynamicResource Brush.TextPrimary}"/>
+                                                <Setter Property="BorderBrush" Value="{DynamicResource Brush.TextPrimary}"/>
+                                            </Trigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </Button.Style>
+                            </Button>
                         </StackPanel>
 
                         <!-- 视频集内容 -->
@@ -2701,7 +2699,7 @@
                 </ScrollViewer>
 
                 <!-- 4: Bottom info bar -->
-                <Border Grid.Row="4" Padding="8,8,8,0" BorderThickness="0,1,0,0" BorderBrush="{DynamicResource Brush.BorderSubtle}">
+                <Border Grid.Row="3" Padding="8,8,8,0" BorderThickness="0,1,0,0" BorderBrush="{DynamicResource Brush.BorderSubtle}">
                     <Grid>
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="Auto"/>
