@@ -17,7 +17,7 @@ public enum ItemType
 public sealed class VideoItem : INotifyPropertyChanged
 {
     private const string FallbackTagCategory = "自定义";
-    private const string FallbackTagColor = "#E4E6EA";
+    private const string FallbackTagColor = "#E5E7EB";
     private const int MaxCardTagRows = 2;
     private const int MaxCardTagRowUnits = 30;
     private const int MaxCardTagTextUnits = 26;
@@ -425,7 +425,7 @@ public sealed class VideoItem : INotifyPropertyChanged
 
     private void RefreshTagItems()
     {
-        RefreshTagItems(_ => FallbackTagCategory, _ => FallbackTagColor);
+        RefreshTagItems(tag => TagService.GetCategory(tag), TagService.GetColor);
     }
 
     public void RefreshTagItems(
@@ -445,7 +445,8 @@ public sealed class VideoItem : INotifyPropertyChanged
             {
                 Name = tag,
                 Category = categoryResolver(tag),
-                Color = colorResolver(tag)
+                Color = colorResolver(tag),
+                Foreground = TagService.GetTextColor(tag)
             });
         }
 
@@ -477,7 +478,8 @@ public sealed class VideoItem : INotifyPropertyChanged
             {
                 Name = tag,
                 Category = categoryResolver(tag),
-                Color = colorResolver(tag)
+                Color = colorResolver(tag),
+                Foreground = TagService.GetTextColor(tag)
             }, row, units));
         }
 
@@ -503,7 +505,8 @@ public sealed class VideoItem : INotifyPropertyChanged
             {
                 Name = $"+{hiddenCount}",
                 Category = FallbackTagCategory,
-                Color = FallbackTagColor
+                Color = FallbackTagColor,
+                Foreground = "#111827"
             });
         }
     }

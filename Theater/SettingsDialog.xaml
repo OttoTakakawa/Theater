@@ -130,6 +130,25 @@
                                     <RadioButton x:Name="ThemeLightRadio" Content="冷灰" Style="{StaticResource AppRadioButton}" Margin="0,0,12,0" Checked="ThemeRadio_Checked" Tag="Light"/>
                                     <RadioButton x:Name="ThemeDarkRadio" Content="暗色" Style="{StaticResource AppRadioButton}" Checked="ThemeRadio_Checked" Tag="Dark"/>
                                 </StackPanel>
+
+                                <TextBlock Text="标签色卡" Style="{StaticResource SectionHeader}"/>
+                                <TextBlock Text="色卡主题" Style="{StaticResource AppDialogLabelText}" Margin="0,2,0,6"/>
+                                <StackPanel Orientation="Horizontal" Margin="0,0,0,10">
+                                    <ComboBox x:Name="TagPaletteComboBox" Style="{StaticResource AppDialogComboBox}" Height="36" Width="180" SelectionChanged="TagPalette_Changed">
+                                        <ComboBoxItem Content="经典（Ant Design 风格）" Tag="Classic"/>
+                                        <ComboBoxItem Content="复古（大地暖色）" Tag="Vintage"/>
+                                        <ComboBoxItem Content="冷色（蓝紫青为主）" Tag="Cool"/>
+                                    </ComboBox>
+                                </StackPanel>
+                                <TextBlock Text="色调模式" Style="{StaticResource AppDialogLabelText}" Margin="0,2,0,6"/>
+                                <StackPanel Orientation="Horizontal" Margin="0,0,0,14">
+                                    <RadioButton x:Name="TagColorDarkRadio" Content="深色背景 + 白字" IsChecked="True" Style="{StaticResource AppRadioButton}" Margin="0,0,12,0" Checked="TagColorMode_Checked" Tag="Dark"/>
+                                    <RadioButton x:Name="TagColorLightRadio" Content="浅色背景 + 深字" Style="{StaticResource AppRadioButton}" Checked="TagColorMode_Checked" Tag="Light"/>
+                                </StackPanel>
+                                <TextBlock Text="深色模式：背景浓郁、文字醒目；浅色模式：背景柔和、类似 GitHub labels。切换后会自动刷新所有标签颜色。"
+                                           Foreground="{DynamicResource Brush.TextMuted}"
+                                           FontSize="11"
+                                           Margin="0,0,0,14"/>
                             </StackPanel>
 
                             <!-- 阅读分区 -->

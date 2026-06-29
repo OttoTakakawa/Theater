@@ -326,8 +326,12 @@ public partial class PlayerWindow : Window
 
         _isClosing = true;
         _loadCancellation?.Cancel();
-        VideoViewControl.Visibility = Visibility.Hidden;
         LoadingOverlay.Visibility = Visibility.Collapsed;
+
+        if (Owner is Window owner && owner.WindowState != WindowState.Minimized)
+        {
+            owner.Activate();
+        }
         Hide();
         _progressSyncTimer.Stop();
         _progressSaveTimer.Stop();
@@ -925,7 +929,6 @@ public partial class PlayerWindow : Window
         EnumChildWindows(mainHwnd, (child, param) =>
         {
             SetClassLongPtr(child, GCLP_HBRBACKGROUND, BlackBrush);
-            InvalidateRect(child, IntPtr.Zero, true);
             return true;
         }, IntPtr.Zero);
 

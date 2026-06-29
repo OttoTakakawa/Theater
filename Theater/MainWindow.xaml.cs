@@ -54,6 +54,8 @@ public partial class MainWindow : Window
     private const string SidebarCollapsedSettingKey = "app.sidebar_collapsed";
     private const string TagClickFilterEnabledSettingKey = "app.tag_click_filter_enabled";
     private const string TagDragAssignEnabledSettingKey = "app.tag_drag_assign_enabled";
+    private const string TagColorModeSettingKey = "tag.color_mode";
+    private const string TagPaletteThemeSettingKey = "tag.palette_theme";
     private const int DefaultLibraryPageSize = 140;
     private const string TagDragDataFormat = "MangaReader.TagName";
     private const double ExpandedSidebarWidth = 228;
@@ -310,8 +312,15 @@ public partial class MainWindow : Window
             var roots = _database.LoadLibraryRoots().Where(Directory.Exists).ToList();
             if (roots.Count == 0)
             {
-                StatusText.Text = "请选择书库文件夹。作品路径不会直接显示在界面里。";
-                RefreshLibraryViews(sort: false, filter: false);
+                var savedOnly = await Task.Run(() => _database.LoadBooksByPath());
+                foreach (var book in savedOnly.Values)
+                {
+                    _allBooks.Add(book);
+                }
+                StatusText.Text = savedOnly.Count > 0
+                    ? $"已加载 {savedOnly.Count} 部作品"
+                    : "请选择书库文件夹。作品路径不会直接显示在界面里。";
+                RefreshLibraryViews(sort: true, filter: true);
                 RefreshShelfOverview();
                 return;
             }
@@ -1456,17 +1465,20 @@ public partial class MainWindow : Window
 
         var menu = new System.Windows.Controls.ContextMenu();
 
-        // 切换卡片样式
-        var styleItem = new System.Windows.Controls.MenuItem { Header = $"切换卡片样式（当前：{book.StyleName}）" };
-        styleItem.Click += (_, _) =>
+        // 切换卡片样式（视频书只有统一横幅，跳过）
+        if (!book.HasVideo)
         {
-            book.CycleBookStyle();
-            _ = Task.Run(() => _database.SaveMetadata(book));
-            book.NotifyAll();
-            ScheduleBookViewRefresh(refreshShelfOverview: false);
-            StatusText.Text = $"已切换《{book.Title}》的卡片样式：{book.StyleName}。";
-        };
-        menu.Items.Add(styleItem);
+            var styleItem = new System.Windows.Controls.MenuItem { Header = $"切换卡片样式（当前：{book.StyleName}）" };
+            styleItem.Click += (_, _) =>
+            {
+                book.CycleBookStyle();
+                _ = Task.Run(() => _database.SaveMetadata(book));
+                book.NotifyAll();
+                ScheduleBookViewRefresh(refreshShelfOverview: false);
+                StatusText.Text = $"已切换《{book.Title}》的卡片样式：{book.StyleName}。";
+            };
+            menu.Items.Add(styleItem);
+        }
 
         // 隐藏/取消隐藏
         var hideItem = new System.Windows.Controls.MenuItem { Header = book.IsHidden ? "取消隐藏" : "隐藏作品" };
@@ -1823,6 +1835,128 @@ public partial class MainWindow : Window
         if (_currentBook is null || !_currentBook.HasVideo) return;
         var row = (sender as FrameworkElement)?.DataContext as DetailVideoRow;
         OpenVideoPlayer(_currentBook, row?.Path);
+    }
+
+    private void DetailVideoItem_PreviewMouseRightButtonDown(object sender, MouseButtonEventArgs e)
+    {
+        if (_currentBook is null) return;
+        if (sender is not FrameworkElement fe || fe.DataContext is not DetailVideoRow row) return;
+        if (!File.Exists(row.Path)) return;
+
+        e.Handled = true;
+
+        var menu = new System.Windows.Controls.ContextMenu();
+
+        // 播放此项
+        var playItem = new System.Windows.Controls.MenuItem { Header = "播放此项" };
+        playItem.Click += (_, _) => OpenVideoPlayer(_currentBook, row.Path);
+        menu.Items.Add(playItem);
+
+        menu.Items.Add(new System.Windows.Controls.Separator());
+
+        // 打开所在文件夹
+        var openFolderItem = new System.Windows.Controls.MenuItem { Header = "打开所在文件夹" };
+        openFolderItem.Click += (_, _) =>
+        {
+            try
+            {
+                System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo
+                {
+                    FileName = "explorer.exe",
+                    Arguments = $"/select,\"{row.Path}\"",
+                    UseShellExecute = true
+                });
+            }
+            catch (Exception ex)
+            {
+                StatusText.Text = $"无法打开文件夹：{ex.Message}";
+            }
+        };
+        menu.Items.Add(openFolderItem);
+
+        // 复制文件路径
+        var copyItem = new System.Windows.Controls.MenuItem { Header = "复制文件路径" };
+        copyItem.Click += (_, _) =>
+        {
+            try { System.Windows.Clipboard.SetText(row.Path); StatusText.Text = "已复制路径到剪贴板。"; }
+            catch (Exception ex) { StatusText.Text = $"复制失败：{ex.Message}"; }
+        };
+        menu.Items.Add(copyItem);
+
+        menu.Items.Add(new System.Windows.Controls.Separator());
+
+        // 重命名
+        var renameItem = new System.Windows.Controls.MenuItem { Header = "重命名" };
+        renameItem.Click += (_, _) => RenameDetailVideoFile(row);
+        menu.Items.Add(renameItem);
+
+        menu.PlacementTarget = fe;
+        menu.IsOpen = true;
+    }
+
+    private void RenameDetailVideoFile(DetailVideoRow row)
+    {
+        if (_currentBook is null) return;
+
+        var dir = System.IO.Path.GetDirectoryName(row.Path);
+        var oldName = System.IO.Path.GetFileName(row.Path);
+        if (string.IsNullOrEmpty(dir)) return;
+
+        var dialog = new RenameDialog(
+            "重命名视频文件",
+            "输入新的文件名（含扩展名）。文件将在磁盘上被重命名。",
+            "原文件名", oldName,
+            "新文件名", oldName)
+        { Owner = this };
+
+        if (dialog.ShowDialog() != true) return;
+
+        var newName = dialog.NewName;
+        if (string.Equals(oldName, newName, StringComparison.Ordinal))
+        {
+            StatusText.Text = "文件名未变化。";
+            return;
+        }
+
+        var invalid = System.IO.Path.GetInvalidFileNameChars();
+        if (newName.IndexOfAny(invalid) >= 0)
+        {
+            System.Windows.MessageBox.Show("文件名包含非法字符。", "提示",
+                MessageBoxButton.OK, MessageBoxImage.Warning);
+            return;
+        }
+
+        var newPath = System.IO.Path.Combine(dir, newName);
+        if (File.Exists(newPath))
+        {
+            System.Windows.MessageBox.Show("目标文件名已存在。", "提示",
+                MessageBoxButton.OK, MessageBoxImage.Warning);
+            return;
+        }
+
+        try
+        {
+            File.Move(row.Path, newPath);
+        }
+        catch (Exception ex)
+        {
+            System.Windows.MessageBox.Show($"重命名失败：{ex.Message}", "错误",
+                MessageBoxButton.OK, MessageBoxImage.Error);
+            return;
+        }
+
+        // 更新 MangaBook.VideoPaths 并持久化
+        var idx = _currentBook.VideoPaths.IndexOf(row.Path);
+        if (idx >= 0)
+        {
+            _currentBook.VideoPaths[idx] = newPath;
+            _currentBook.VideoPathsJson = System.Text.Json.JsonSerializer.Serialize(_currentBook.VideoPaths);
+            _ = Task.Run(() => _database.SaveMetadata(_currentBook));
+        }
+
+        // 刷新详情视频列表
+        PopulateDetailVideoRows(_currentBook);
+        StatusText.Text = $"已重命名：{oldName} → {newName}";
     }
 
     private void PopulateDetailVideoRows(MangaBook book)
@@ -3154,6 +3288,13 @@ public partial class MainWindow : Window
         }
 
         RefreshTagInteractionSettings();
+
+        if (dialog.TagPaletteChanged)
+        {
+            MarkTagIndexDirty();
+            RebuildTagIndex();
+            RefreshTagManagementItems();
+        }
 
         if (dialog.CoverQualityChanged)
         {
@@ -5534,6 +5675,36 @@ public partial class MainWindow : Window
         {
             _tagDragTriggered = false;
         }
+        LoadTagPaletteSettings();
+    }
+
+    private void LoadTagPaletteSettings()
+    {
+        var modeStr = _database.LoadSetting(TagColorModeSettingKey, "dark");
+        TagCatalog.CurrentColorMode = string.Equals(modeStr, "light", StringComparison.OrdinalIgnoreCase)
+            ? TagColorMode.Light : TagColorMode.Dark;
+
+        var themeStr = _database.LoadSetting(TagPaletteThemeSettingKey, "classic");
+        TagCatalog.CurrentPaletteTheme = themeStr?.ToLowerInvariant() switch
+        {
+            "vintage" => TagPaletteTheme.Vintage,
+            "cool" => TagPaletteTheme.Cool,
+            _ => TagPaletteTheme.Classic,
+        };
+    }
+
+    private void SaveTagPaletteSettings()
+    {
+        var modeStr = TagCatalog.CurrentColorMode == TagColorMode.Light ? "light" : "dark";
+        _database.SaveSetting(TagColorModeSettingKey, modeStr);
+
+        var themeStr = TagCatalog.CurrentPaletteTheme switch
+        {
+            TagPaletteTheme.Vintage => "vintage",
+            TagPaletteTheme.Cool => "cool",
+            _ => "classic",
+        };
+        _database.SaveSetting(TagPaletteThemeSettingKey, themeStr);
     }
 
     private void ResetTagInteractionState()
@@ -6255,6 +6426,14 @@ public partial class MainWindow : Window
         _toastTimer.Start();
     }
 
+    private void CardPlayButton_Click(object sender, System.Windows.Input.MouseButtonEventArgs e)
+    {
+        if (sender is FrameworkElement { DataContext: MangaBook book })
+        {
+            OpenBook(book);
+        }
+    }
+
     private void OpenBook(MangaBook book)
     {
         if (book.IsMissing)
@@ -6332,6 +6511,10 @@ public partial class MainWindow : Window
 
         player.Closed += (_, _) =>
         {
+            if (WindowState == WindowState.Minimized)
+                WindowState = WindowState.Normal;
+            Activate();
+
             _sessionBooksRead++;
             // 热切换后窗口内可能已切换到另一部作品，按当前视频回写，
             // 而不是构造时传入的首个 videoItem。
@@ -7292,7 +7475,8 @@ public partial class MainWindow : Window
                 var item = current[i];
                 if (!string.Equals(item.Name, tag, StringComparison.OrdinalIgnoreCase)
                     || !string.Equals(item.Category, TagCategory(tag), StringComparison.OrdinalIgnoreCase)
-                    || !string.Equals(item.Color, TagColor(tag), StringComparison.OrdinalIgnoreCase))
+                    || !string.Equals(item.Color, TagColor(tag), StringComparison.OrdinalIgnoreCase)
+                    || !string.Equals(item.Foreground, TagForeground(tag), StringComparison.OrdinalIgnoreCase))
                 {
                     tagItemsMatch = false;
                     break;
@@ -7316,7 +7500,8 @@ public partial class MainWindow : Window
                 {
                     Name = tag,
                     Category = TagCategory(tag),
-                    Color = TagColor(tag)
+                    Color = TagColor(tag),
+                    Foreground = TagForeground(tag)
                 });
             }
             book.TagItems.AddRange(newTagChips);
@@ -7332,10 +7517,13 @@ public partial class MainWindow : Window
     {
         foreach (var item in book.CardTagItems)
         {
-            var expectedCategory = IsCardTagSummary(item.Name) ? item.Category : TagCategory(item.Name);
-            var expectedColor = IsCardTagSummary(item.Name) ? "#E5E7EB" : TagColor(item.Name);
+            var isSummary = IsCardTagSummary(item.Name);
+            var expectedCategory = isSummary ? item.Category : TagCategory(item.Name);
+            var expectedColor = isSummary ? "#E5E7EB" : TagColor(item.Name);
+            var expectedForeground = isSummary ? "#111827" : TagForeground(item.Name);
             if (!string.Equals(item.Category, expectedCategory, StringComparison.OrdinalIgnoreCase)
-                || !string.Equals(item.Color, expectedColor, StringComparison.OrdinalIgnoreCase))
+                || !string.Equals(item.Color, expectedColor, StringComparison.OrdinalIgnoreCase)
+                || !string.Equals(item.Foreground, expectedForeground, StringComparison.OrdinalIgnoreCase))
             {
                 return false;
             }
@@ -7356,7 +7544,8 @@ public partial class MainWindow : Window
             {
                 Name = item.Name,
                 Category = isSummary ? item.Category : TagCategory(item.Name),
-                Color = isSummary ? "#E5E7EB" : TagColor(item.Name)
+                Color = isSummary ? "#E5E7EB" : TagColor(item.Name),
+                Foreground = isSummary ? "#111827" : TagForeground(item.Name)
             });
         }
         book.CardTagItems.AddRange(newCardChips);
@@ -7600,9 +7789,7 @@ public partial class MainWindow : Window
 
     private Dictionary<string, string> BuildTagCategoryColorMap(string? excludingTag = null)
     {
-        var colors = DefaultTagPresets
-            .GroupBy(tag => tag.Category, StringComparer.OrdinalIgnoreCase)
-            .ToDictionary(group => group.Key, group => group.First().Color, StringComparer.OrdinalIgnoreCase);
+        var colors = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
 
         foreach (var tag in _managedTags.OrderBy(name => name, StringComparer.CurrentCultureIgnoreCase))
         {
@@ -7794,6 +7981,16 @@ public partial class MainWindow : Window
         return ResolveCategoryColor(TagCategory(tag)) ?? TagService.GetColor(tag);
     }
 
+    private string TagForeground(string tag)
+    {
+        var userColor = ResolveCategoryColor(TagCategory(tag));
+        if (userColor is not null)
+        {
+            return TagCatalog.GetTextColorForBackground(userColor);
+        }
+        return TagService.GetTextColor(tag);
+    }
+
     private TagChip CreateTagChip(string tag, bool isSelected = false, bool isExcluded = false)
     {
         var preset = DefaultTagPresets.FirstOrDefault(item => string.Equals(item.Name, tag, StringComparison.OrdinalIgnoreCase));
@@ -7801,13 +7998,16 @@ public partial class MainWindow : Window
         var category = TagCategory(tag);
         var usageCount = GetTagUsageCount(tag);
         var displayName = StripCategoryPrefix(tag, category);
+        var color = TagColor(tag);
+        var foreground = TagForeground(tag);
         return preset is not null
             ? new TagChip
             {
                 Name = displayName,
                 RawName = tag,
                 Category = category,
-                Color = TagColor(tag),
+                Color = color,
+                Foreground = foreground,
                 IsExclusive = IsExclusiveTag(tag),
                 IsSelected = isSelected,
                 IsExcluded = isExcluded,
@@ -7822,7 +8022,8 @@ public partial class MainWindow : Window
                 Name = displayName,
                 RawName = tag,
                 Category = category,
-                Color = TagColor(tag),
+                Color = color,
+                Foreground = foreground,
                 IsExclusive = IsExclusiveTag(tag),
                 IsSelected = isSelected,
                 IsExcluded = isExcluded,

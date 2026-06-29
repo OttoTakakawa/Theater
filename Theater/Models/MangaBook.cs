@@ -128,6 +128,15 @@ public sealed class MangaBook : INotifyPropertyChanged
 
     public bool HasRating => _rating > 0;
     public string RatingText => _rating.ToString("0.#");
+    public string RatingStarsText
+    {
+        get
+        {
+            if (_rating <= 0) return "";
+            var stars = Math.Clamp((int)Math.Round(_rating), 1, 5);
+            return new string('★', stars) + new string('☆', 5 - stars);
+        }
+    }
     public bool IsSelectedForBatch
     {
         get => _isSelectedForBatch;
@@ -296,6 +305,30 @@ public sealed class MangaBook : INotifyPropertyChanged
     public string ProgressText => PageCount <= 0 ? "0 / 0" : $"{LastReadPageIndex + 1} / {PageCount}";
     public string PageCountText => $"{PageCount}页";
     public string SizeText => FormatSize(TotalBytes);
+
+    /// <summary>
+    /// 从 tags 中提取"作品"分类下的值（日本AV/国产/欧美），用于卡片信息行。
+    /// </summary>
+    public string WorkCategoryText
+    {
+        get
+        {
+            if (string.IsNullOrWhiteSpace(Tags))
+                return "";
+            foreach (var part in Tags.Split([',', '，', ';', '；'], StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries))
+            {
+                var p = part.AsSpan().Trim();
+                if (p.Equals("日本AV", StringComparison.OrdinalIgnoreCase) ||
+                    p.Equals("国产", StringComparison.OrdinalIgnoreCase) ||
+                    p.Equals("欧美", StringComparison.OrdinalIgnoreCase))
+                {
+                    // 日本AV → 日本，国产 → 国产，欧美 → 欧美
+                    return p.EndsWith("AV", StringComparison.OrdinalIgnoreCase) ? p[..^2].ToString() : p.ToString();
+                }
+            }
+            return "";
+        }
+    }
     public string ReadCountText => ReadCount <= 0
         ? (HasVideo ? "未标记看过" : "未标记读过")
         : (HasVideo ? $"看过 {ReadCount} 次" : $"读过 {ReadCount} 次");
@@ -427,7 +460,8 @@ public sealed class MangaBook : INotifyPropertyChanged
             tagChips.Add(new TagChip
             {
                 Name = tag,
-                Color = TagColor(tag)
+                Color = TagColor(tag),
+                Foreground = TagService.GetTextColor(tag)
             });
         }
         TagItems.AddRange(tagChips);
@@ -456,7 +490,8 @@ public sealed class MangaBook : INotifyPropertyChanged
             visible.Add((new TagChip
             {
                 Name = tag,
-                Color = TagColor(tag)
+                Color = TagColor(tag),
+                Foreground = TagService.GetTextColor(tag)
             }, row, units));
         }
 
@@ -483,7 +518,8 @@ public sealed class MangaBook : INotifyPropertyChanged
             CardTagItems.Add(new TagChip
             {
                 Name = $"+{hiddenCount}",
-                Color = "#E5E7EB"
+                Color = "#E5E7EB",
+                Foreground = "#111827"
             });
         }
     }

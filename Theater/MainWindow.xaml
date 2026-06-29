@@ -138,7 +138,7 @@
         <Style x:Key="AppTagChipText" TargetType="TextBlock">
             <Setter Property="FontSize" Value="11"/>
             <Setter Property="FontWeight" Value="SemiBold"/>
-            <Setter Property="Foreground" Value="{DynamicResource Brush.TextPrimary}"/>
+            <Setter Property="Foreground" Value="{Binding Foreground}"/>
             <Setter Property="VerticalAlignment" Value="Center"/>
         </Style>
         <Style x:Key="DetailHeroTagChipBorder" TargetType="Border" BasedOn="{StaticResource TagChipLg}"/>
@@ -706,14 +706,6 @@
                                         </LinearGradientBrush>
                                     </Rectangle.Fill>
                                 </Rectangle>
-                                <!-- 播放按钮 -->
-                                <Border HorizontalAlignment="Center" VerticalAlignment="Center"
-                                        Width="42" Height="42" CornerRadius="{StaticResource RadiusPanel}"
-                                        Background="#C8111827" BorderBrush="#55FFFFFF" BorderThickness="1">
-                                    <Path Width="13" Height="16" Stretch="Fill" Fill="#F8FAFC"
-                                          Data="M 0 0 L 13 8 L 0 16 Z"
-                                          HorizontalAlignment="Center" VerticalAlignment="Center" Margin="3,0,0,0"/>
-                                </Border>
                             </Grid>
                         </Border>
                         <CheckBox IsChecked="{Binding IsSelectedForBatch, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
@@ -807,14 +799,6 @@
                                            FontWeight="Black"/>
                             </Border>
                         </Grid>
-                        <Border Padding="7,3"
-                                CornerRadius="{StaticResource RadiusControl}"
-                                BorderThickness="1"
-                                HorizontalAlignment="Right"
-                                VerticalAlignment="Top"
-                                Margin="0,4,2,0">
-                            <ContentControl ContentTemplate="{StaticResource RatingBadgeTemplate}" Content="{Binding}"/>
-                        </Border>
                         <CheckBox IsChecked="{Binding IsSelectedForBatch, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
                                   Style="{StaticResource BatchSelectCheckBox}"
                                   Visibility="{Binding IsBatchSelectionUiVisible, RelativeSource={RelativeSource AncestorType=Window}, Converter={StaticResource BoolToVisibility}}"
@@ -826,44 +810,73 @@
                     </Grid>
 
                     <StackPanel Margin="0,10,0,0">
+                        <!-- 1. 标题 -->
                         <TextBlock Text="{Binding Title}" FontWeight="Black" FontSize="14" Foreground="{DynamicResource Brush.TextPrimary}" TextTrimming="CharacterEllipsis" TextAlignment="Center"/>
-                        <TextBlock Text="{Binding Author}" Margin="0,4,0,0" Foreground="{DynamicResource Brush.TextMuted}" FontSize="12" TextTrimming="CharacterEllipsis" TextAlignment="Center"/>
-                        <!-- 视频缺失标签行 -->
-                        <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,7,0,0">
-                            <!-- 视频缺失标签 -->
-                            <Border Padding="6,2" CornerRadius="{StaticResource RadiusControl}"
-                                    Background="#FFF7ED" BorderBrush="#FDBA74" BorderThickness="1">
-                                <Border.Style>
-                                    <Style TargetType="Border">
-                                        <Setter Property="Visibility" Value="Collapsed"/>
-                                        <Style.Triggers>
-                                            <DataTrigger Binding="{Binding HasVideo}" Value="False">
-                                                <Setter Property="Visibility" Value="Visible"/>
-                                            </DataTrigger>
-                                        </Style.Triggers>
-                                    </Style>
-                                </Border.Style>
-                                <TextBlock Text="视频不见了" FontSize="10" FontWeight="Bold" Foreground="#C2410C"/>
-                            </Border>
-                        </StackPanel>
-                        <TextBlock Text="{Binding LibraryMetaText}" Margin="0,5,0,0" Foreground="{DynamicResource Brush.TextMuted}" FontSize="12" FontWeight="SemiBold" TextAlignment="Center" TextTrimming="CharacterEllipsis"/>
-                        <TextBlock Text="{Binding LibraryMetaSubText}" Foreground="{DynamicResource Brush.Accent}" FontSize="11" TextAlignment="Center" TextTrimming="CharacterEllipsis">
+                        <!-- 2. 别名 -->
+                        <TextBlock Text="{Binding ForeignName}" Margin="0,3,0,0" Foreground="{DynamicResource Brush.TextMuted}" FontSize="11" TextTrimming="CharacterEllipsis" TextAlignment="Center" ToolTip="{Binding ForeignName}">
                             <TextBlock.Style>
                                 <Style TargetType="TextBlock">
-                                    <Setter Property="Margin" Value="0,4,0,0"/>
+                                    <Setter Property="Visibility" Value="Visible"/>
                                     <Style.Triggers>
                                         <Trigger Property="Text" Value="">
                                             <Setter Property="Visibility" Value="Collapsed"/>
-                                            <Setter Property="Margin" Value="0"/>
                                         </Trigger>
                                     </Style.Triggers>
                                 </Style>
                             </TextBlock.Style>
                         </TextBlock>
+                        <!-- 3. 体积 · ⏱时长 · 🎬大类 -->
+                        <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,6,0,0">
+                            <TextBlock Text="{Binding SizeText}" Foreground="{DynamicResource Brush.TextMuted}" FontSize="11" FontWeight="SemiBold"/>
+                            <TextBlock Text=" · ⏱" Foreground="{DynamicResource Brush.TextMuted}" FontSize="11" Margin="4,0,2,0"/>
+                            <TextBlock Text="{Binding VideoDurationText}" Foreground="{DynamicResource Brush.TextMuted}" FontSize="11" FontWeight="SemiBold"/>
+                            <TextBlock Text=" · 🎬" Foreground="{DynamicResource Brush.TextMuted}" FontSize="11" Margin="4,0,2,0"/>
+                            <TextBlock Text="{Binding WorkCategoryText}" Foreground="{DynamicResource Brush.TextMuted}" FontSize="11" FontWeight="SemiBold"/>
+                        </StackPanel>
+                        <!-- 4. 评分 + 播放按钮 -->
+                        <DockPanel Margin="0,7,0,0" LastChildFill="True">
+                            <TextBlock DockPanel.Dock="Right" Text="▶ 播放"
+                                       FontSize="11" FontWeight="SemiBold"
+                                       Foreground="{DynamicResource Brush.Accent}"
+                                       VerticalAlignment="Center"
+                                       Margin="8,0,0,0"
+                                       Cursor="Hand"
+                                       MouseLeftButtonDown="CardPlayButton_Click"
+                                       ToolTip="播放"/>
+                            <TextBlock Text="{Binding RatingStarsText}" Foreground="#E4B95F" FontSize="12" VerticalAlignment="Center">
+                                <TextBlock.Style>
+                                    <Style TargetType="TextBlock">
+                                        <Setter Property="Visibility" Value="Collapsed"/>
+                                        <Style.Triggers>
+                                            <DataTrigger Binding="{Binding HasRating}" Value="True">
+                                                <Setter Property="Visibility" Value="Visible"/>
+                                            </DataTrigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </TextBlock.Style>
+                            </TextBlock>
+                        </DockPanel>
+                        <!-- 视频缺失标签 -->
+                        <Border Padding="6,2" CornerRadius="{StaticResource RadiusControl}"
+                                Background="#FFF7ED" BorderBrush="#FDBA74" BorderThickness="1"
+                                HorizontalAlignment="Center" Margin="0,5,0,0">
+                            <Border.Style>
+                                <Style TargetType="Border">
+                                    <Setter Property="Visibility" Value="Collapsed"/>
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding HasVideo}" Value="False">
+                                            <Setter Property="Visibility" Value="Visible"/>
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </Border.Style>
+                            <TextBlock Text="视频不见了" FontSize="10" FontWeight="Bold" Foreground="#C2410C"/>
+                        </Border>
                         <TextBlock Text="{Binding MissingText}" Foreground="{DynamicResource Brush.StatusMissing}" FontWeight="SemiBold">
                             <TextBlock.Style>
                                 <Style TargetType="TextBlock">
-                                    <Setter Property="Margin" Value="0,6,0,0"/>
+                                    <Setter Property="Margin" Value="0,4,0,0"/>
+                                    <Setter Property="TextAlignment" Value="Center"/>
                                     <Style.Triggers>
                                         <Trigger Property="Text" Value="">
                                             <Setter Property="Visibility" Value="Collapsed"/>
@@ -876,7 +889,8 @@
                         <TextBlock Text="{Binding HiddenText}" Foreground="{DynamicResource Brush.StatusHidden}" FontWeight="SemiBold">
                             <TextBlock.Style>
                                 <Style TargetType="TextBlock">
-                                    <Setter Property="Margin" Value="0,6,0,0"/>
+                                    <Setter Property="Margin" Value="0,4,0,0"/>
+                                    <Setter Property="TextAlignment" Value="Center"/>
                                     <Style.Triggers>
                                         <Trigger Property="Text" Value="">
                                             <Setter Property="Visibility" Value="Collapsed"/>
@@ -906,8 +920,8 @@
                                         <TextBlock Text="{Binding Name}"
                                                    MaxWidth="148"
                                                    Style="{StaticResource AppTagChipText}"
-                                                   FontSize="10"
-                                                   LineHeight="12"
+                                                   FontSize="11"
+                                                   LineHeight="14"
                                                    LineStackingStrategy="BlockLineHeight"
                                                    TextWrapping="NoWrap"
                                                    TextTrimming="CharacterEllipsis"
@@ -1072,10 +1086,10 @@
                     <TextBlock Text="{Binding Category}" FontSize="11" Margin="0,0,5,0">
                         <TextBlock.Style>
                             <Style TargetType="TextBlock" BasedOn="{StaticResource AppTagChipText}">
-                                <Setter Property="Foreground" Value="{DynamicResource Brush.TextPrimary}"/>
+                                <Setter Property="Foreground" Value="{Binding Foreground}"/>
                                 <Style.Triggers>
                                     <DataTrigger Binding="{Binding IsSelected}" Value="True">
-                                        <Setter Property="Foreground" Value="{DynamicResource Brush.TextPrimary}"/>
+                                        <Setter Property="Foreground" Value="{Binding Foreground}"/>
                                     </DataTrigger>
                                 </Style.Triggers>
                             </Style>
@@ -1084,10 +1098,10 @@
                     <TextBlock Text="{Binding Name}">
                         <TextBlock.Style>
                             <Style TargetType="TextBlock" BasedOn="{StaticResource AppTagChipText}">
-                                <Setter Property="Foreground" Value="{DynamicResource Brush.TextPrimary}"/>
+                                <Setter Property="Foreground" Value="{Binding Foreground}"/>
                                 <Style.Triggers>
                                     <DataTrigger Binding="{Binding IsSelected}" Value="True">
-                                        <Setter Property="Foreground" Value="{DynamicResource Brush.TextPrimary}"/>
+                                        <Setter Property="Foreground" Value="{Binding Foreground}"/>
                                     </DataTrigger>
                                 </Style.Triggers>
                             </Style>
@@ -1139,10 +1153,10 @@
                     <TextBlock Text="{Binding Name}">
                         <TextBlock.Style>
                             <Style TargetType="TextBlock" BasedOn="{StaticResource AppTagChipText}">
-                                <Setter Property="Foreground" Value="{DynamicResource Brush.TextPrimary}"/>
+                                <Setter Property="Foreground" Value="{Binding Foreground}"/>
                                 <Style.Triggers>
                                     <DataTrigger Binding="{Binding IsExcluded}" Value="True">
-                                        <Setter Property="Foreground" Value="{DynamicResource Brush.TextPrimary}"/>
+                                        <Setter Property="Foreground" Value="{Binding Foreground}"/>
                                     </DataTrigger>
                                 </Style.Triggers>
                             </Style>
@@ -2003,7 +2017,7 @@
                                             <StackPanel>
                                                 <StackPanel Orientation="Horizontal">
                                                     <Border Background="{Binding Color}" CornerRadius="{StaticResource RadiusControl}" Padding="10,5" Margin="0,0,10,0">
-                                                        <TextBlock Text="{Binding Category}" Foreground="{DynamicResource Brush.TextPrimary}" FontSize="11" FontWeight="SemiBold"/>
+                                                        <TextBlock Text="{Binding Category}" Foreground="{Binding Foreground}" FontSize="11" FontWeight="SemiBold"/>
                                                     </Border>
                                                     <TextBlock Text="{Binding Name}" VerticalAlignment="Center" FontSize="18" FontWeight="Bold" Foreground="{DynamicResource Brush.TextPrimary}"/>
                                                 </StackPanel>
@@ -2488,7 +2502,8 @@
                                                 BorderBrush="{DynamicResource Brush.BorderSubtle}"
                                                 BorderThickness="1"
                                                 Cursor="Hand"
-                                                MouseLeftButtonDown="DetailVideoItem_Click">
+                                                MouseLeftButtonDown="DetailVideoItem_Click"
+                                                PreviewMouseRightButtonDown="DetailVideoItem_PreviewMouseRightButtonDown">
                                             <Grid>
                                                 <Grid.ColumnDefinitions>
                                                     <ColumnDefinition Width="Auto"/>
@@ -2529,7 +2544,8 @@
                                                 MouseEnter="VideoCard_MouseEnter"
                                                 MouseLeave="VideoCard_MouseLeave"
                                                 PreviewMouseLeftButtonDown="VideoCard_PreviewMouseLeftButtonDown"
-                                                PreviewMouseLeftButtonUp="VideoCard_PreviewMouseLeftButtonUp">
+                                                PreviewMouseLeftButtonUp="VideoCard_PreviewMouseLeftButtonUp"
+                                                PreviewMouseRightButtonDown="DetailVideoItem_PreviewMouseRightButtonDown">
                                             <Border.RenderTransform>
                                                 <ScaleTransform ScaleX="1" ScaleY="1"/>
                                             </Border.RenderTransform>
@@ -2570,7 +2586,7 @@
                                                                 <Border Padding="6,2" Margin="0,0,4,4" CornerRadius="9"
                                                                         Background="{Binding Color}" MaxWidth="160">
                                                                     <TextBlock Text="{Binding Name}" FontSize="10"
-                                                                               Foreground="{DynamicResource Brush.TextPrimary}"
+                                                                               Foreground="{Binding Foreground}"
                                                                                TextTrimming="CharacterEllipsis" MaxWidth="140"
                                                                                ToolTip="{Binding Name}"/>
                                                                 </Border>

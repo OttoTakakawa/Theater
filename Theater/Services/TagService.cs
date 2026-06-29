@@ -29,6 +29,11 @@ public static class TagService
         return TagCatalog.GetColor(tag);
     }
 
+    public static string GetTextColor(string tag)
+    {
+        return TagCatalog.GetTextColor(tag);
+    }
+
     public static bool IsMutuallyExclusiveCategory(string category)
     {
         return string.Equals(category, "作品", StringComparison.OrdinalIgnoreCase);

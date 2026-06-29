@@ -20,7 +20,8 @@ public sealed class CoverThumbnailPipeline
 
     public async Task<BitmapSource?> LoadAsync(MangaBook book, CancellationToken cancellationToken = default)
     {
-        if (book.Pages.Count == 0)
+        var hasCoverPath = !string.IsNullOrEmpty(book.CoverImagePath) && File.Exists(book.CoverImagePath);
+        if (book.Pages.Count == 0 && !hasCoverPath)
         {
             return null;
         }

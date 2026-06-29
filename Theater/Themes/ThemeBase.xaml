@@ -817,8 +817,8 @@
             <Border.Style>
                 <Style TargetType="Border">
                     <Setter Property="Visibility" Value="Collapsed"/>
-                    <Setter Property="Background" Value="{DynamicResource Brush.SurfaceMuted}"/>
-                    <Setter Property="BorderBrush" Value="{DynamicResource Brush.BorderSubtle}"/>
+                    <Setter Property="Background" Value="#F3F4F6"/>
+                    <Setter Property="BorderBrush" Value="#D1D5DB"/>
                     <Setter Property="BorderThickness" Value="1"/>
                     <Style.Triggers>
                         <DataTrigger Binding="{Binding HasRating}" Value="True">
@@ -826,8 +826,8 @@
                         </DataTrigger>
                         <DataTrigger Binding="{Binding IsFavorite}" Value="True">
                             <Setter Property="Visibility" Value="Visible"/>
-                            <Setter Property="Background" Value="{DynamicResource Brush.Favorite}"/>
-                            <Setter Property="BorderBrush" Value="{DynamicResource Brush.Favorite}"/>
+                            <Setter Property="Background" Value="#FFEEAA"/>
+                            <Setter Property="BorderBrush" Value="#E4B95F"/>
                         </DataTrigger>
                     </Style.Triggers>
                 </Style>
@@ -837,29 +837,26 @@
                     <TextBlock.Style>
                         <Style TargetType="TextBlock">
                             <Setter Property="Visibility" Value="Collapsed"/>
-                            <Setter Property="Foreground" Value="{DynamicResource Brush.TextMuted}"/>
+                            <Setter Property="Foreground" Value="#6B7280"/>
                             <Style.Triggers>
                                 <DataTrigger Binding="{Binding HasRating}" Value="True">
                                     <Setter Property="Visibility" Value="Visible"/>
                                 </DataTrigger>
                                 <DataTrigger Binding="{Binding IsFavorite}" Value="True">
-                                    <Setter Property="Foreground" Value="{DynamicResource Brush.Accent}"/>
+                                    <Setter Property="Foreground" Value="#B45309"/>
                                 </DataTrigger>
                             </Style.Triggers>
                         </Style>
                     </TextBlock.Style>
                 </TextBlock>
-                <TextBlock Text="★" FontSize="12" FontWeight="Bold" VerticalAlignment="Center">
+                <TextBlock Text="★" FontSize="12" FontWeight="Bold" Margin="3,0,0,0" VerticalAlignment="Center">
                     <TextBlock.Style>
                         <Style TargetType="TextBlock">
-                            <Setter Property="Margin" Value="0"/>
-                            <Setter Property="Foreground" Value="{DynamicResource Brush.Dim}"/>
+                            <Setter Property="Visibility" Value="Collapsed"/>
+                            <Setter Property="Foreground" Value="#B45309"/>
                             <Style.Triggers>
-                                <DataTrigger Binding="{Binding HasRating}" Value="True">
-                                    <Setter Property="Margin" Value="3,0,0,0"/>
-                                </DataTrigger>
                                 <DataTrigger Binding="{Binding IsFavorite}" Value="True">
-                                    <Setter Property="Foreground" Value="{DynamicResource Brush.Accent}"/>
+                                    <Setter Property="Visibility" Value="Visible"/>
                                 </DataTrigger>
                             </Style.Triggers>
                         </Style>

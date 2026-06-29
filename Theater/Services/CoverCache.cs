@@ -48,6 +48,11 @@ public sealed class CoverCache
 
     public string GetCacheKey(MangaBook book)
     {
+        if (!string.IsNullOrEmpty(book.CoverImagePath) && book.Pages.Count == 0)
+        {
+            return book.Id + "|" + book.CoverImagePath;
+        }
+
         if (book.Pages.Count == 0)
         {
             return book.Id;

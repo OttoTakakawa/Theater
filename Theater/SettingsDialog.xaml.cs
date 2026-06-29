@@ -18,6 +18,7 @@ public partial class SettingsDialog : Window
     public bool LibraryExitConfirmChanged { get; private set; }
     public bool ThemeChanged { get; private set; }
     public bool CoverQualityChanged { get; private set; }
+    public bool TagPaletteChanged { get; private set; }
     public SettingsAction RequestedAction { get; private set; } = SettingsAction.None;
 
     private string? _pendingDataRoot;
@@ -135,6 +136,26 @@ public partial class SettingsDialog : Window
         ColorGroupCRadio.IsChecked = savedGroup == "C";
         ColorGroupDRadio.IsChecked = savedGroup == "D";
         RefreshColorSwatches();
+
+        // 标签色卡
+        var savedTheme = _database.LoadSetting("tag.palette_theme", "classic");
+        TagPaletteComboBox.SelectedIndex = savedTheme?.ToLowerInvariant() switch
+        {
+            "vintage" => 1,
+            "cool" => 2,
+            _ => 0
+        };
+        var savedMode = _database.LoadSetting("tag.color_mode", "dark");
+        if (string.Equals(savedMode, "light", StringComparison.OrdinalIgnoreCase))
+        {
+            TagColorDarkRadio.IsChecked = false;
+            TagColorLightRadio.IsChecked = true;
+        }
+        else
+        {
+            TagColorDarkRadio.IsChecked = true;
+            TagColorLightRadio.IsChecked = false;
+        }
 
         _hasChanges = false;
         UnsavedHint.Visibility = Visibility.Collapsed;
@@ -328,6 +349,16 @@ public partial class SettingsDialog : Window
     private void WaterfallRightClickCheckBox_Changed(object sender, RoutedEventArgs e) { if (UnsavedHint is not null) MarkChanged(); }
     private void TagClickFilterCheckBox_Changed(object sender, RoutedEventArgs e) { if (UnsavedHint is not null) MarkChanged(); }
     private void TagDragAssignCheckBox_Changed(object sender, RoutedEventArgs e) { if (UnsavedHint is not null) MarkChanged(); }
+    private void TagPalette_Changed(object sender, SelectionChangedEventArgs e)
+    {
+        if (_loading || TagPaletteComboBox is null || UnsavedHint is null) return;
+        MarkChanged();
+    }
+    private void TagColorMode_Checked(object sender, RoutedEventArgs e)
+    {
+        if (_loading || TagColorDarkRadio is null || UnsavedHint is null) return;
+        MarkChanged();
+    }
     private void LibraryExitConfirmCheckBox_Changed(object sender, RoutedEventArgs e) { if (UnsavedHint is not null) MarkChanged(); }
     private void CoverQualityComboBox_Changed(object sender, SelectionChangedEventArgs e)
     {
@@ -466,11 +497,14 @@ public partial class SettingsDialog : Window
         _database.SaveShortcut("reader.wheelmode", "0");
         _database.SaveShortcut("reader.qualitymode", "Quality");
         _database.SaveShortcut("reader.doublepage.gap", "8");
+        _database.SaveSetting("tag.palette_theme", "classic");
+        _database.SaveSetting("tag.color_mode", "dark");
 
         PrivacyModeChanged = true;
         ShortcutsChanged = true;
         WaterfallRightClickChanged = true;
         CoverQualityChanged = true;
+        TagPaletteChanged = true;
 
         System.Windows.MessageBox.Show("所有设置已重置为默认值。", "完成", MessageBoxButton.OK, MessageBoxImage.Information);
         LoadCurrentSettings();
@@ -565,6 +599,24 @@ public partial class SettingsDialog : Window
             _database.SaveSetting("app.theme", newTheme);
             App.ApplyTheme(newTheme);
             ThemeChanged = true;
+        }
+
+        // 标签色卡
+        var newPaletteTheme = TagPaletteComboBox.SelectedIndex switch
+        {
+            1 => "vintage",
+            2 => "cool",
+            _ => "classic"
+        };
+        var newColorMode = TagColorLightRadio.IsChecked == true ? "light" : "dark";
+        var oldPaletteTheme = _database.LoadSetting("tag.palette_theme", "classic");
+        var oldColorMode = _database.LoadSetting("tag.color_mode", "dark");
+        if (!string.Equals(newPaletteTheme, oldPaletteTheme, StringComparison.OrdinalIgnoreCase)
+            || !string.Equals(newColorMode, oldColorMode, StringComparison.OrdinalIgnoreCase))
+        {
+            _database.SaveSetting("tag.palette_theme", newPaletteTheme);
+            _database.SaveSetting("tag.color_mode", newColorMode);
+            TagPaletteChanged = true;
         }
 
         _hasChanges = false;
