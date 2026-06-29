@@ -6,10 +6,10 @@
     <ApplicationIcon>AppIcon.ico</ApplicationIcon>
     <AssemblyName>Theater</AssemblyName>
     <RootNamespace>Theater</RootNamespace>
-    <Version>0.1.1.49</Version>
-    <AssemblyVersion>0.1.1.49</AssemblyVersion>
-    <FileVersion>0.1.1.49</FileVersion>
-    <InformationalVersion>0.1.1.49</InformationalVersion>
+    <Version>0.1.1.50</Version>
+    <AssemblyVersion>0.1.1.50</AssemblyVersion>
+    <FileVersion>0.1.1.50</FileVersion>
+    <InformationalVersion>0.1.1.50</InformationalVersion>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
     <UseWPF>true</UseWPF>

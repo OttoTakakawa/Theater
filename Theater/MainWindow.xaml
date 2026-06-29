@@ -835,26 +835,16 @@
                         </StackPanel>
                         <!-- 4. 评分 + 播放按钮 -->
                         <DockPanel Margin="0,7,0,0" LastChildFill="True">
-                            <TextBlock DockPanel.Dock="Right" Text="▶ 播放"
-                                       FontSize="11" FontWeight="SemiBold"
-                                       Foreground="{DynamicResource Brush.Accent}"
-                                       VerticalAlignment="Center"
-                                       Margin="8,0,0,0"
-                                       Cursor="Hand"
-                                       MouseLeftButtonDown="CardPlayButton_Click"
-                                       ToolTip="播放"/>
-                            <TextBlock Text="{Binding RatingStarsText}" Foreground="#E4B95F" FontSize="12" VerticalAlignment="Center">
-                                <TextBlock.Style>
-                                    <Style TargetType="TextBlock">
-                                        <Setter Property="Visibility" Value="Collapsed"/>
-                                        <Style.Triggers>
-                                            <DataTrigger Binding="{Binding HasRating}" Value="True">
-                                                <Setter Property="Visibility" Value="Visible"/>
-                                            </DataTrigger>
-                                        </Style.Triggers>
-                                    </Style>
-                                </TextBlock.Style>
-                            </TextBlock>
+                            <Border DockPanel.Dock="Right"
+                                    CornerRadius="{StaticResource RadiusControl}"
+                                    Background="{DynamicResource Brush.Accent}"
+                                    Padding="9,3" Margin="6,0,0,0"
+                                    Cursor="Hand"
+                                    MouseLeftButtonDown="CardPlayButton_Click"
+                                    ToolTip="播放">
+                                <TextBlock Text="▶ 播放" FontSize="10" Foreground="#FFFFFF" FontWeight="SemiBold"/>
+                            </Border>
+                            <TextBlock Text="{Binding RatingStarsText}" Foreground="#E4B95F" FontSize="12" VerticalAlignment="Center" ToolTip="{Binding RatingText}"/>
                         </DockPanel>
                         <!-- 视频缺失标签 -->
                         <Border Padding="6,2" CornerRadius="{StaticResource RadiusControl}"

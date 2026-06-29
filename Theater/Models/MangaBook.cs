@@ -132,8 +132,7 @@ public sealed class MangaBook : INotifyPropertyChanged
     {
         get
         {
-            if (_rating <= 0) return "";
-            var stars = Math.Clamp((int)Math.Round(_rating), 1, 5);
+            var stars = _rating <= 0 ? 0 : Math.Clamp((int)Math.Round(_rating), 0, 5);
             return new string('★', stars) + new string('☆', 5 - stars);
         }
     }
