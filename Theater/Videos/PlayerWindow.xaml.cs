@@ -159,6 +159,7 @@ public partial class PlayerWindow : Window
     private double _bottomBarHeight = DefaultBottomBarHeight;
     private bool _sidePanelPinned;
     private bool _sidePanelVisibleBeforeFullscreen;
+    private int _windowModeLayoutRequestId;
     private string _playlistViewMode = "list";
 
     private readonly List<VideoSegmentMarker> _markers = new();
@@ -1812,6 +1813,7 @@ public partial class PlayerWindow : Window
         ApplyFillCrop();
         UpdateOverlayProgressVisual();
         RebuildMarkerLayer();
+        ScheduleWindowModeVideoLayoutRecovery();
     }
 
     private void ExitFullscreen()
@@ -1842,6 +1844,50 @@ public partial class PlayerWindow : Window
         ApplyFillCrop();
         UpdateProgressVisual();
         RebuildMarkerLayer();
+        ScheduleWindowModeVideoLayoutRecovery();
+    }
+
+    private void ScheduleWindowModeVideoLayoutRecovery()
+    {
+        var requestId = ++_windowModeLayoutRequestId;
+        _ = RecoverWindowModeVideoLayoutAsync(requestId);
+    }
+
+    private async Task RecoverWindowModeVideoLayoutAsync(int requestId)
+    {
+        try
+        {
+            await Dispatcher.InvokeAsync(() => { }, DispatcherPriority.Loaded);
+            if (_isClosing || requestId != _windowModeLayoutRequestId)
+            {
+                return;
+            }
+
+            UpdateLayout();
+            ApplyWindowModeVideoLayout();
+            ApplyFillCrop();
+            ApplyVideoViewAspectLayout();
+            UpdateProgressVisual();
+            UpdateOverlayProgressVisual();
+            RebuildMarkerLayer();
+
+            await Dispatcher.InvokeAsync(() => { }, DispatcherPriority.ContextIdle);
+            if (_isClosing || requestId != _windowModeLayoutRequestId)
+            {
+                return;
+            }
+
+            UpdateLayout();
+            ApplyVideoViewAspectLayout();
+            if (_mediaPlayer?.IsPlaying == true)
+            {
+                VideoBackdrop.Visibility = Visibility.Collapsed;
+            }
+        }
+        catch (Exception ex) when (ex is InvalidOperationException or TaskCanceledException)
+        {
+            AppLogger.Warn("player-fullscreen", $"Window mode layout recovery skipped: {ex.Message}");
+        }
     }
 
     // ── 返回 ──────────────────────────────────────────────────────────────
