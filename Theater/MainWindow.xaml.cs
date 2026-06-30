@@ -4485,7 +4485,7 @@ public partial class MainWindow : Window
         ReadOnlyTagsText.Text = EmptyAsPlaceholder(book.Tags);
         ReadOnlyCoverPageText.Text = (book.CoverPageIndex + 1).ToString();
         ReadOnlyReadCountText.Text = book.ReadCountText;
-        ReadOnlySummaryText.Text = EmptyAsPlaceholder(book.Summary);
+        ReadOnlySummaryText.Text = string.IsNullOrWhiteSpace(book.Summary) ? "暂无简介" : book.Summary;
         HideBookButton.Content = book.IsHidden ? "恢复显示" : "隐藏作品";
         HideBookButtonEdit.Content = book.IsHidden ? "恢复显示" : "隐藏作品";
         PrivacyCoverButtonEdit.Content = book.IsPrivacyCover ? "取消隐私封面" : "保持隐私封面";
@@ -4496,10 +4496,10 @@ public partial class MainWindow : Window
         }
 
         // Hero 区
-        var displayTitle = string.IsNullOrWhiteSpace(book.Title) ? "未命名作品" : book.Title;
+        var displayTitle = string.IsNullOrWhiteSpace(book.DisplayTitle) ? "未命名作品" : book.DisplayTitle;
         BookTitleText.Text = displayTitle;
-        BookTitleText.ToolTip = displayTitle;
-        BookAuthorFilterButton.Content = string.IsNullOrWhiteSpace(book.Author) ? "作者 未指定" : $"作者 {book.Author}";
+        BookTitleText.ToolTip = book.Title;
+        BookAuthorFilterButton.Content = string.IsNullOrWhiteSpace(book.Author) ? "作者 未指定" : book.Author;
         BookAuthorFilterButton.IsEnabled = !string.IsNullOrWhiteSpace(book.Author);
         // Meta 行：视频作品显示视频信息，传统漫画显示页数
         // 单视频不显示视频数/图集数，只有合集才显示
@@ -4529,8 +4529,8 @@ public partial class MainWindow : Window
             MetaPageCountLabelText.Text = "视频";
             MetaCoverPageLabelText.Text = "时长";
             // 单视频不显示"1个视频"，合集才显示视频数
-            ApplyMetaValue(MetaPageCountValueText, isVideoCollection ? book.VideoCountText : "", forceFilled: true);
-            ApplyMetaValue(MetaCoverPageValueText, book.VideoDurationText, forceFilled: true);
+            ApplyMetaValue(MetaPageCountValueText, isVideoCollection ? book.VideoCountText : "单视频");
+            ApplyMetaValue(MetaCoverPageValueText, book.VideoDurationText);
         }
         else
         {
@@ -4770,6 +4770,16 @@ public partial class MainWindow : Window
         EditModeHintText.Text = enabled ? "编辑模式：修改后点击“保存信息”" : "只读模式：点击“编辑”后修改信息";
         ReadOnlyInfoPanel.Visibility = enabled ? Visibility.Collapsed : Visibility.Visible;
         EditFormPanel.Visibility = enabled ? Visibility.Visible : Visibility.Collapsed;
+        if (enabled)
+        {
+            DetailTabBar.Visibility = Visibility.Collapsed;
+            DetailVideoContent.Visibility = Visibility.Collapsed;
+            DetailGalleryContent.Visibility = Visibility.Collapsed;
+        }
+        else
+        {
+            UpdateDetailTabVisibility();
+        }
         SaveMetadataButton.IsEnabled = enabled;
         ImportedTodayButton.IsEnabled = enabled;
 

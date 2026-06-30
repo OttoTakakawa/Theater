@@ -657,7 +657,6 @@
             <Border x:Name="LibraryBookCard"
                     Width="{Binding BookWidth}"
                     Height="{Binding BookHeight}"
-                    Padding="12"
                     CornerRadius="{StaticResource RadiusPanel}"
                     Background="Transparent"
                     BorderBrush="Transparent"
@@ -676,7 +675,11 @@
                         <Setter Property="Background" Value="Transparent"/>
                         <Setter Property="BorderBrush" Value="Transparent"/>
                         <Setter Property="BorderThickness" Value="0"/>
+                        <Setter Property="Padding" Value="12"/>
                         <Style.Triggers>
+                            <DataTrigger Binding="{Binding HasVideo}" Value="True">
+                                <Setter Property="Padding" Value="0"/>
+                            </DataTrigger>
                             <DataTrigger Binding="{Binding IsSelectedForBatch}" Value="True">
                                 <Setter Property="Background" Value="{DynamicResource Brush.SurfaceSelected}"/>
                                 <Setter Property="BorderBrush" Value="{DynamicResource Brush.Accent}"/>
@@ -701,50 +704,12 @@
                                 <Rectangle>
                                     <Rectangle.Fill>
                                         <LinearGradientBrush StartPoint="0,1" EndPoint="0,0">
-                                            <GradientStop Color="#B8111827" Offset="0"/>
+                                            <GradientStop Color="#70111827" Offset="0"/>
                                             <GradientStop Color="#00111827" Offset="1"/>
                                         </LinearGradientBrush>
                                     </Rectangle.Fill>
                                 </Rectangle>
-                                <TextBlock Text="{Binding VideoCardMetaText}"
-                                           Margin="12,0,54,10"
-                                           VerticalAlignment="Bottom"
-                                           Foreground="#F8FAFC"
-                                           FontSize="11"
-                                           FontWeight="SemiBold"
-                                           TextTrimming="CharacterEllipsis">
-                                    <TextBlock.Style>
-                                        <Style TargetType="TextBlock">
-                                            <Setter Property="Visibility" Value="Visible"/>
-                                            <Style.Triggers>
-                                                <Trigger Property="Text" Value="">
-                                                    <Setter Property="Visibility" Value="Collapsed"/>
-                                                </Trigger>
-                                            </Style.Triggers>
-                                        </Style>
-                                    </TextBlock.Style>
-                                </TextBlock>
                             </Grid>
-                        </Border>
-                        <Border Width="38"
-                                Height="38"
-                                CornerRadius="19"
-                                Background="#CC111827"
-                                BorderBrush="#33FFFFFF"
-                                BorderThickness="1"
-                                HorizontalAlignment="Right"
-                                VerticalAlignment="Bottom"
-                                Margin="0,0,10,10"
-                                Cursor="Hand"
-                                MouseLeftButtonDown="CardPlayButton_Click"
-                                ToolTip="播放">
-                            <TextBlock Text="▶"
-                                       Foreground="#FFFFFF"
-                                       FontSize="15"
-                                       FontWeight="SemiBold"
-                                       HorizontalAlignment="Center"
-                                       VerticalAlignment="Center"
-                                       Margin="2,0,0,0"/>
                         </Border>
                         <CheckBox IsChecked="{Binding IsSelectedForBatch, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
                                   Style="{StaticResource BatchSelectCheckBox}"
@@ -847,7 +812,7 @@
                                   Margin="6,6,0,0"/>
                     </Grid>
 
-                    <StackPanel Margin="2,10,2,0">
+                    <StackPanel Margin="12,10,12,0">
                         <!-- 1. 标题 -->
                         <TextBlock Text="{Binding DisplayTitle}"
                                    FontWeight="SemiBold"
@@ -873,25 +838,7 @@
                                 </Style>
                             </TextBlock.Style>
                         </TextBlock>
-                        <!-- 3. 轻量元信息 -->
-                        <TextBlock Text="{Binding VideoCardMetaText}"
-                                   Foreground="{DynamicResource Brush.TextMuted}"
-                                   FontSize="11"
-                                   FontWeight="SemiBold"
-                                   Margin="0,6,0,0"
-                                   TextTrimming="CharacterEllipsis">
-                            <TextBlock.Style>
-                                <Style TargetType="TextBlock">
-                                    <Setter Property="Visibility" Value="Visible"/>
-                                    <Style.Triggers>
-                                        <Trigger Property="Text" Value="">
-                                            <Setter Property="Visibility" Value="Collapsed"/>
-                                        </Trigger>
-                                    </Style.Triggers>
-                                </Style>
-                            </TextBlock.Style>
-                        </TextBlock>
-                        <!-- 4. 有评分时才显示 -->
+                        <!-- 3. 有评分时才显示 -->
                         <TextBlock Text="{Binding VideoRatingBadgeText}"
                                    Foreground="#A16207"
                                    FontSize="12"
@@ -961,13 +908,9 @@
                             </ItemsControl.ItemsPanel>
                             <ItemsControl.ItemTemplate>
                                 <DataTemplate>
-                                    <Border MaxWidth="170"
-                                            Padding="8,3"
-                                            Margin="0,0,5,5"
-                                            CornerRadius="999"
-                                            Background="#EFEAE2"
-                                            BorderBrush="#E2D8CA"
-                                            BorderThickness="1"
+                                    <Border Style="{StaticResource CardTagChipBorder}"
+                                            MaxWidth="170"
+                                            Background="{Binding Color}"
                                             MouseEnter="TagChip_MouseEnter"
                                             MouseLeave="TagChip_MouseLeave"
                                             PreviewMouseLeftButtonDown="TagChip_PreviewMouseLeftButtonDown"
@@ -976,9 +919,8 @@
                                             MouseLeftButtonDown="TagChip_MouseLeftButtonDown">
                                         <TextBlock Text="{Binding Name}"
                                                    MaxWidth="148"
-                                                   Foreground="#4B5563"
+                                                   Style="{StaticResource AppTagChipText}"
                                                    FontSize="11"
-                                                   FontWeight="SemiBold"
                                                    LineHeight="14"
                                                    LineStackingStrategy="BlockLineHeight"
                                                    TextWrapping="NoWrap"
@@ -2291,29 +2233,26 @@
         <Border x:Name="DetailShell"
                 Grid.Column="1"
                 Grid.ColumnSpan="2"
-                Width="1080"
-                MaxHeight="820"
+                Width="1180"
+                MaxHeight="840"
                 HorizontalAlignment="Center"
                 VerticalAlignment="Center"
                 Panel.ZIndex="10"
                 Visibility="Collapsed"
                 Margin="26"
-                Padding="20"
-                CornerRadius="{StaticResource RadiusPanel}"
-                Background="{DynamicResource Brush.Surface}"
+                Padding="0"
+                CornerRadius="26"
+                Background="#F8F5EF"
                 BorderBrush="{DynamicResource Brush.BorderSubtle}"
                 BorderThickness="1"
                 Effect="{StaticResource PanelShadow}">
             <Grid x:Name="DetailPanelGrid">
                 <Grid.RowDefinitions>
-                    <RowDefinition Height="Auto"/>     <!-- 0: 顶部栏 -->
-                    <RowDefinition Height="Auto"/>     <!-- 1: Cover + Title/Author -->
-                    <RowDefinition Height="*"/>        <!-- 2: 内容区 -->
-                    <RowDefinition Height="Auto"/>     <!-- 3: Bottom info bar -->
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="*"/>
                 </Grid.RowDefinitions>
 
-                <!-- 0: 顶部栏 (复用现有) -->
-                <Grid Grid.Row="0" Margin="0,0,0,16">
+                <Grid Grid.Row="0" Margin="24,22,24,0">
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="Auto"/>
                         <ColumnDefinition Width="*"/>
@@ -2347,96 +2286,216 @@
                     </StackPanel>
                 </Grid>
 
-                <!-- 1: Cover 16:9 + Title/Author -->
-                <StackPanel Grid.Row="1" Margin="0,0,0,12" HorizontalAlignment="Center">
-                    <Border Width="480" Height="270" CornerRadius="{StaticResource RadiusPanel}"
-                            Background="#111827" ClipToBounds="True">
-                        <Grid>
-                            <Border CornerRadius="{StaticResource RadiusPanel}" ClipToBounds="True">
+                <ScrollViewer Grid.Row="1"
+                              Margin="0,18,0,0"
+                              Padding="24,0,24,24"
+                              VerticalScrollBarVisibility="Auto"
+                              PreviewMouseWheel="FastVerticalScrollViewer_PreviewMouseWheel">
+                    <StackPanel MaxWidth="1132" HorizontalAlignment="Center">
+                        <StackPanel x:Name="ReadOnlyInfoPanel">
+                            <Border Padding="28"
+                                    CornerRadius="24"
+                                    Background="#FFFCF7"
+                                    BorderBrush="{DynamicResource Brush.BorderSubtle}"
+                                    BorderThickness="1"
+                                    Effect="{StaticResource PanelShadow}">
                                 <Grid>
-                                    <Image x:Name="DetailCoverImage" Source="{Binding CoverImage}" Stretch="UniformToFill"
-                                           RenderOptions.BitmapScalingMode="HighQuality"/>
-                                    <!-- 无 cover 时纯色+🎬 -->
-                                    <Border Background="#1E293B">
-                                        <Border.Style>
-                                            <Style TargetType="Border">
-                                                <Setter Property="Visibility" Value="Collapsed"/>
-                                                <Style.Triggers>
-                                                    <DataTrigger Binding="{Binding CoverImage}" Value="{x:Null}">
-                                                        <Setter Property="Visibility" Value="Visible"/>
-                                                    </DataTrigger>
-                                                </Style.Triggers>
-                                            </Style>
-                                        </Border.Style>
-                                        <TextBlock Text="🎬" FontSize="64" HorizontalAlignment="Center"
-                                                   VerticalAlignment="Center" Foreground="#475569"/>
-                                    </Border>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="5*"/>
+                                        <ColumnDefinition Width="32"/>
+                                        <ColumnDefinition Width="6*"/>
+                                    </Grid.ColumnDefinitions>
+
+                                    <StackPanel Grid.Column="0">
+                                        <Border CornerRadius="20"
+                                                Background="#17202A"
+                                                ClipToBounds="True"
+                                                Effect="{StaticResource BookShadow}">
+                                            <Grid>
+                                                <Grid Height="286">
+                                                    <Image x:Name="DetailCoverImage"
+                                                           Source="{Binding CoverImage}"
+                                                           Stretch="UniformToFill"
+                                                           RenderOptions.BitmapScalingMode="HighQuality"/>
+                                                    <Border Background="#1F2937">
+                                                        <Border.Style>
+                                                            <Style TargetType="Border">
+                                                                <Setter Property="Visibility" Value="Collapsed"/>
+                                                                <Style.Triggers>
+                                                                    <DataTrigger Binding="{Binding CoverImage}" Value="{x:Null}">
+                                                                        <Setter Property="Visibility" Value="Visible"/>
+                                                                    </DataTrigger>
+                                                                </Style.Triggers>
+                                                            </Style>
+                                                        </Border.Style>
+                                                        <Grid>
+                                                            <Rectangle Opacity="0.55">
+                                                                <Rectangle.Fill>
+                                                                    <LinearGradientBrush StartPoint="0,0" EndPoint="1,1">
+                                                                        <GradientStop Color="#27364A" Offset="0"/>
+                                                                        <GradientStop Color="#111827" Offset="1"/>
+                                                                    </LinearGradientBrush>
+                                                                </Rectangle.Fill>
+                                                            </Rectangle>
+                                                            <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center">
+                                                                <TextBlock Text="THEATER"
+                                                                           Foreground="#94A3B8"
+                                                                           FontSize="13"
+                                                                           FontWeight="SemiBold"
+                                                                           HorizontalAlignment="Center"/>
+                                                                <TextBlock Text="MEDIA"
+                                                                           Foreground="#E5E7EB"
+                                                                           FontSize="34"
+                                                                           FontWeight="SemiBold"
+                                                                           HorizontalAlignment="Center"
+                                                                           Margin="0,4,0,0"/>
+                                                            </StackPanel>
+                                                        </Grid>
+                                                    </Border>
+                                                    <Rectangle VerticalAlignment="Bottom" Height="86">
+                                                        <Rectangle.Fill>
+                                                            <LinearGradientBrush StartPoint="0,1" EndPoint="0,0">
+                                                                <GradientStop Color="#7A111827" Offset="0"/>
+                                                                <GradientStop Color="#00111827" Offset="1"/>
+                                                            </LinearGradientBrush>
+                                                        </Rectangle.Fill>
+                                                    </Rectangle>
+                                                </Grid>
+                                                <Button x:Name="DetailPlayAllButton"
+                                                        Content="▶ 播放"
+                                                        Click="DetailPlayAll_Click"
+                                                        Style="{StaticResource DetailHeroPrimaryButton}"
+                                                        HorizontalAlignment="Right"
+                                                        VerticalAlignment="Bottom"
+                                                        Height="42"
+                                                        MinHeight="42"
+                                                        Padding="20,0"
+                                                        Margin="0,0,18,18"
+                                                        Visibility="{Binding HasVideo, Converter={StaticResource BoolToVisibility}}"/>
+                                            </Grid>
+                                        </Border>
+                                        <TextBlock x:Name="BookMetaLineText"
+                                                   Style="{StaticResource DetailHeroMetaText}"
+                                                   Margin="4,12,4,0"
+                                                   TextTrimming="CharacterEllipsis"/>
+                                    </StackPanel>
+
+                                    <StackPanel Grid.Column="2" VerticalAlignment="Stretch">
+                                        <TextBlock x:Name="BookTitleText"
+                                                   FontSize="30"
+                                                   FontWeight="SemiBold"
+                                                   LineHeight="36"
+                                                   LineStackingStrategy="BlockLineHeight"
+                                                   Foreground="{DynamicResource Brush.TextPrimary}"
+                                                   TextWrapping="Wrap"
+                                                   MaxHeight="78"
+                                                   TextTrimming="CharacterEllipsis"
+                                                   ToolTip="{Binding Text, RelativeSource={RelativeSource Self}}"/>
+                                        <TextBlock x:Name="BookAuthorText"
+                                                   FontSize="13"
+                                                   Foreground="{DynamicResource Brush.TextMuted}"
+                                                   Margin="0,8,0,0"
+                                                   TextTrimming="CharacterEllipsis"/>
+
+                                        <WrapPanel Margin="0,18,0,0">
+                                            <Border Padding="12,7"
+                                                    CornerRadius="999"
+                                                    Background="#F1ECE4"
+                                                    BorderBrush="#E3D8CA"
+                                                    BorderThickness="1"
+                                                    Margin="0,0,8,8">
+                                                <TextBlock x:Name="ReadingStatusInlineText"
+                                                           Foreground="{DynamicResource Brush.TextPrimary}"
+                                                           FontSize="12"
+                                                           FontWeight="SemiBold"/>
+                                            </Border>
+                                            <StackPanel x:Name="RatingStarsHost"
+                                                        Orientation="Horizontal"
+                                                        VerticalAlignment="Center"
+                                                        Margin="0,0,10,8"/>
+                                            <Button x:Name="ToggleFavoriteButton"
+                                                    Content="☆ 收藏"
+                                                    Click="ToggleFavorite_Click"
+                                                    Style="{StaticResource DetailTopBarFavoriteButton}"
+                                                    Height="34"
+                                                    MinHeight="34"
+                                                    Margin="0,0,8,8"/>
+                                            <Button x:Name="BookAuthorFilterButton"
+                                                    Click="DetailAuthorFilter_Click"
+                                                    Style="{StaticResource DetailHeroSecondaryButton}"
+                                                    Height="34"
+                                                    MinHeight="34"
+                                                    Margin="0,0,8,8"/>
+                                        </WrapPanel>
+
+                                        <ItemsControl x:Name="BookTagChips" Margin="0,4,0,0">
+                                            <ItemsControl.ItemsPanel>
+                                                <ItemsPanelTemplate>
+                                                    <WrapPanel Orientation="Horizontal"/>
+                                                </ItemsPanelTemplate>
+                                            </ItemsControl.ItemsPanel>
+                                            <ItemsControl.ItemTemplate>
+                                                <DataTemplate DataType="{x:Type models:TagChip}">
+                                                    <Border Padding="10,5"
+                                                            Margin="0,0,7,7"
+                                                            CornerRadius="999"
+                                                            Background="#EFEAE2"
+                                                            BorderBrush="#E3D8CA"
+                                                            BorderThickness="1"
+                                                            MouseEnter="TagChip_MouseEnter"
+                                                            MouseLeave="TagChip_MouseLeave"
+                                                            PreviewMouseLeftButtonDown="TagChip_PreviewMouseLeftButtonDown"
+                                                            PreviewMouseLeftButtonUp="TagChip_PreviewMouseLeftButtonUp"
+                                                            MouseLeftButtonDown="TagChip_MouseLeftButtonDown">
+                                                        <TextBlock Text="{Binding Name}"
+                                                                   Foreground="#4B5563"
+                                                                   FontSize="12"
+                                                                   FontWeight="SemiBold"/>
+                                                    </Border>
+                                                </DataTemplate>
+                                            </ItemsControl.ItemTemplate>
+                                        </ItemsControl>
+
+                                        <StackPanel Margin="0,22,0,0">
+                                            <Button x:Name="OpenCurrentBookButton"
+                                                    Content="播放"
+                                                    Click="OpenCurrentBook_Click"
+                                                    Style="{StaticResource DetailHeroPrimaryButton}"
+                                                    Height="44"
+                                                    MinHeight="44"
+                                                    Padding="24,0"
+                                                    HorizontalAlignment="Left"
+                                                    Visibility="Collapsed"/>
+                                            <WrapPanel Margin="0,12,0,0">
+                                                <Button Content="标记 -1"
+                                                        Click="DecreaseReadCount_Click"
+                                                        Style="{StaticResource DetailHeroSecondaryButton}"
+                                                        Height="34"
+                                                        MinHeight="34"
+                                                        Margin="0,0,8,8"/>
+                                                <Button Content="标记 +1"
+                                                        Click="IncreaseReadCount_Click"
+                                                        Style="{StaticResource DetailHeroSecondaryButton}"
+                                                        Height="34"
+                                                        MinHeight="34"
+                                                        Margin="0,0,8,8"/>
+                                                <Button Content="打开文件夹"
+                                                        Click="OpenFolder_Click"
+                                                        Style="{StaticResource DetailHeroSecondaryButton}"
+                                                        Height="34"
+                                                        MinHeight="34"
+                                                        Margin="0,0,8,8"/>
+                                                <Button Content="重新定位"
+                                                        Click="Relocate_Click"
+                                                        Style="{StaticResource DetailHeroSecondaryButton}"
+                                                        Height="34"
+                                                        MinHeight="34"
+                                                        Margin="0,0,8,8"/>
+                                            </WrapPanel>
+                                        </StackPanel>
+                                    </StackPanel>
                                 </Grid>
                             </Border>
-                            <!-- ▶ 播放按钮 -->
-                            <Border HorizontalAlignment="Center" VerticalAlignment="Center"
-                                    Width="48" Height="48" CornerRadius="{StaticResource RadiusPanel}"
-                                    Background="#CC111827" BorderBrush="#55FFFFFF" BorderThickness="1"
-                                    Visibility="{Binding HasVideo, Converter={StaticResource BoolToVisibility}}">
-                                <Path Width="16" Height="20" Stretch="Fill" Fill="#F8FAFC"
-                                      Data="M 0 0 L 16 10 L 0 20 Z"
-                                      HorizontalAlignment="Center" VerticalAlignment="Center" Margin="4,0,0,0"/>
-                            </Border>
-                        </Grid>
-                    </Border>
-                    <TextBlock x:Name="BookTitleText" Margin="0,10,0,2"
-                               FontSize="20" FontWeight="Black" Foreground="{DynamicResource Brush.TextPrimary}"
-                               TextTrimming="CharacterEllipsis" HorizontalAlignment="Center"
-                               ToolTip="{Binding Text, RelativeSource={RelativeSource Self}}"/>
-                    <TextBlock x:Name="BookAuthorText" FontSize="13" Foreground="{DynamicResource Brush.TextMuted}"
-                               HorizontalAlignment="Center" TextTrimming="CharacterEllipsis"/>
-                </StackPanel>
-
-                <!-- 2: 内容区 -->
-                <ScrollViewer Grid.Row="2" VerticalScrollBarVisibility="Auto"
-                              PreviewMouseWheel="FastVerticalScrollViewer_PreviewMouseWheel">
-                    <StackPanel>
-                        <!-- 旧只读信息面板 (条件显示) -->
-                        <StackPanel x:Name="ReadOnlyInfoPanel">
-                            <WrapPanel Margin="0,0,0,10" VerticalAlignment="Center">
-                                <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Margin="0,0,12,0">
-                                    <StackPanel x:Name="RatingStarsHost" Orientation="Horizontal" VerticalAlignment="Center" Margin="0,0,12,0"/>
-                                    <Button x:Name="ToggleFavoriteButton" Content="☆ 收藏" Click="ToggleFavorite_Click" Style="{StaticResource DetailTopBarFavoriteButton}" Height="36" MinHeight="36"/>
-                                </StackPanel>
-                                <Button x:Name="BookAuthorFilterButton" Click="DetailAuthorFilter_Click"
-                                        Style="{StaticResource DetailHeroSecondaryButton}" VerticalAlignment="Center" Margin="0,0,8,8" Height="36" MinHeight="36"/>
-                                <Border Height="36" Padding="12,0" Margin="0,0,8,8"
-                                        CornerRadius="{StaticResource RadiusControl}"
-                                        Background="{DynamicResource Brush.SurfaceMuted}"
-                                        BorderBrush="{DynamicResource Brush.BorderSubtle}" BorderThickness="1">
-                                    <TextBlock x:Name="BookMetaLineText" Style="{StaticResource DetailHeroMetaText}" VerticalAlignment="Center"/>
-                                </Border>
-                                <ItemsControl x:Name="BookTagChips" Margin="0,0,0,0" VerticalAlignment="Center">
-                                    <ItemsControl.ItemsPanel><ItemsPanelTemplate><WrapPanel Orientation="Horizontal"/></ItemsPanelTemplate></ItemsControl.ItemsPanel>
-                                    <ItemsControl.ItemTemplate>
-                                        <DataTemplate DataType="{x:Type models:TagChip}">
-                                            <Border Style="{StaticResource DetailHeroTagChipBorder}" Background="{Binding Color}"
-                                                    MouseEnter="TagChip_MouseEnter" MouseLeave="TagChip_MouseLeave"
-                                                    PreviewMouseLeftButtonDown="TagChip_PreviewMouseLeftButtonDown"
-                                                    PreviewMouseLeftButtonUp="TagChip_PreviewMouseLeftButtonUp"
-                                                    MouseLeftButtonDown="TagChip_MouseLeftButtonDown">
-                                                <TextBlock Text="{Binding Name}" Style="{StaticResource AppTagChipText}"/>
-                                            </Border>
-                                        </DataTemplate>
-                                    </ItemsControl.ItemTemplate>
-                                </ItemsControl>
-                            </WrapPanel>
-
-                            <StackPanel Orientation="Horizontal" Margin="0,0,0,10">
-                                <Button x:Name="OpenCurrentBookButton" Content="开始阅读" Click="OpenCurrentBook_Click"
-                                        Style="{StaticResource DetailHeroPrimaryButton}" Margin="0,0,12,0"/>
-                                <Button Content="-1" Click="DecreaseReadCount_Click" Style="{StaticResource DetailHeroSecondaryButton}" Margin="0,0,8,0"/>
-                                <Button Content="+1" Click="IncreaseReadCount_Click" Style="{StaticResource DetailHeroSecondaryButton}" Margin="0,0,12,0"/>
-                                <Button Content="打开所在文件夹" Click="OpenFolder_Click" Style="{StaticResource DetailHeroSecondaryButton}" Margin="0,0,10,0"/>
-                                <Button Content="重新定位" Click="Relocate_Click" Style="{StaticResource DetailHeroSecondaryButton}"/>
-                            </StackPanel>
-
-                            <TextBlock x:Name="ReadingStatusInlineText" Style="{StaticResource DetailReadingStatusText}" Margin="0,0,0,12"/>
 
                             <!-- 隐藏的旧字段控件 -->
                             <StackPanel Visibility="Collapsed">
@@ -2452,37 +2511,62 @@
                                 <Button x:Name="HideBookButton" Click="HideBook_Click"/>
                             </StackPanel>
 
-                            <Border Margin="0,0,0,12" Padding="0" Background="Transparent">
-                                <StackPanel>
-                                    <TextBlock Text="简介" Style="{StaticResource DetailSectionTitleText}"/>
-                                    <TextBlock x:Name="ReadOnlySummaryText" Style="{StaticResource DetailSummaryText}"/>
-                                </StackPanel>
-                            </Border>
-
-                            <StackPanel Margin="0,0,0,12">
-                                <TextBlock Text="作品信息" Style="{StaticResource DetailSectionTitleText}"/>
-                                <Grid>
-                                    <Grid.ColumnDefinitions>
-                                        <ColumnDefinition Width="72"/><ColumnDefinition Width="*"/><ColumnDefinition Width="28"/>
-                                        <ColumnDefinition Width="72"/><ColumnDefinition Width="*"/>
-                                    </Grid.ColumnDefinitions>
-                                    <Grid.RowDefinitions>
-                                        <RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/>
-                                    </Grid.RowDefinitions>
-                                    <TextBlock Grid.Row="0" Grid.Column="0" Text="作者" Style="{StaticResource DetailMetaLabelText}" Margin="0,0,0,10"/>
-                                    <TextBlock x:Name="MetaAuthorValueText" Grid.Row="0" Grid.Column="1" Style="{StaticResource DetailMetaValueText}" Margin="0,0,0,10"/>
-                                    <TextBlock Grid.Row="0" Grid.Column="3" Text="外文名" Style="{StaticResource DetailMetaLabelText}" Margin="0,0,0,10"/>
-                                    <TextBlock x:Name="MetaForeignNameValueText" Grid.Row="0" Grid.Column="4" Style="{StaticResource DetailMetaValueText}" Margin="0,0,0,10"/>
-                                    <TextBlock x:Name="MetaPageCountLabelText" Grid.Row="1" Grid.Column="0" Text="页数" Style="{StaticResource DetailMetaLabelText}" Margin="0,0,0,10"/>
-                                    <TextBlock x:Name="MetaPageCountValueText" Grid.Row="1" Grid.Column="1" Style="{StaticResource DetailMetaValueText}" Margin="0,0,0,10"/>
-                                    <TextBlock x:Name="MetaCoverPageLabelText" Grid.Row="1" Grid.Column="3" Text="封面页" Style="{StaticResource DetailMetaLabelText}" Margin="0,0,0,10"/>
-                                    <TextBlock x:Name="MetaCoverPageValueText" Grid.Row="1" Grid.Column="4" Style="{StaticResource DetailMetaValueText}" Margin="0,0,0,10"/>
-                                    <TextBlock Grid.Row="2" Grid.Column="0" Text="出品时间" Style="{StaticResource DetailMetaLabelText}"/>
-                                    <TextBlock x:Name="MetaProducedAtValueText" Grid.Row="2" Grid.Column="1" Style="{StaticResource DetailMetaValueText}"/>
-                                    <TextBlock Grid.Row="2" Grid.Column="3" Text="录入时间" Style="{StaticResource DetailMetaLabelText}"/>
-                                    <TextBlock x:Name="MetaImportedAtValueText" Grid.Row="2" Grid.Column="4" Style="{StaticResource DetailMetaValueText}"/>
-                                </Grid>
-                            </StackPanel>
+                            <Grid Margin="0,24,0,14">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="5*"/>
+                                    <ColumnDefinition Width="24"/>
+                                    <ColumnDefinition Width="4*"/>
+                                </Grid.ColumnDefinitions>
+                                <Border Grid.Column="0"
+                                        Padding="22"
+                                        CornerRadius="20"
+                                        Background="#FFFCF7"
+                                        BorderBrush="{DynamicResource Brush.BorderSubtle}"
+                                        BorderThickness="1">
+                                    <StackPanel>
+                                        <TextBlock Text="简介" Style="{StaticResource DetailSectionTitleText}"/>
+                                        <TextBlock x:Name="ReadOnlySummaryText"
+                                                   Style="{StaticResource DetailSummaryText}"
+                                                   Margin="0,12,0,0"/>
+                                    </StackPanel>
+                                </Border>
+                                <Border Grid.Column="2"
+                                        Padding="22"
+                                        CornerRadius="20"
+                                        Background="#FFFCF7"
+                                        BorderBrush="{DynamicResource Brush.BorderSubtle}"
+                                        BorderThickness="1">
+                                    <StackPanel>
+                                        <TextBlock Text="作品信息" Style="{StaticResource DetailSectionTitleText}"/>
+                                        <Grid Margin="0,14,0,0">
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="82"/>
+                                                <ColumnDefinition Width="*"/>
+                                            </Grid.ColumnDefinitions>
+                                            <Grid.RowDefinitions>
+                                                <RowDefinition Height="Auto"/>
+                                                <RowDefinition Height="Auto"/>
+                                                <RowDefinition Height="Auto"/>
+                                                <RowDefinition Height="Auto"/>
+                                                <RowDefinition Height="Auto"/>
+                                                <RowDefinition Height="Auto"/>
+                                            </Grid.RowDefinitions>
+                                            <TextBlock Grid.Row="0" Grid.Column="0" Text="作者" Style="{StaticResource DetailMetaLabelText}" Margin="0,0,0,10"/>
+                                            <TextBlock x:Name="MetaAuthorValueText" Grid.Row="0" Grid.Column="1" Style="{StaticResource DetailMetaValueText}" Margin="0,0,0,10"/>
+                                            <TextBlock Grid.Row="1" Grid.Column="0" Text="外文名" Style="{StaticResource DetailMetaLabelText}" Margin="0,0,0,10"/>
+                                            <TextBlock x:Name="MetaForeignNameValueText" Grid.Row="1" Grid.Column="1" Style="{StaticResource DetailMetaValueText}" Margin="0,0,0,10"/>
+                                            <TextBlock x:Name="MetaPageCountLabelText" Grid.Row="2" Grid.Column="0" Text="页数" Style="{StaticResource DetailMetaLabelText}" Margin="0,0,0,10"/>
+                                            <TextBlock x:Name="MetaPageCountValueText" Grid.Row="2" Grid.Column="1" Style="{StaticResource DetailMetaValueText}" Margin="0,0,0,10"/>
+                                            <TextBlock x:Name="MetaCoverPageLabelText" Grid.Row="3" Grid.Column="0" Text="封面页" Style="{StaticResource DetailMetaLabelText}" Margin="0,0,0,10"/>
+                                            <TextBlock x:Name="MetaCoverPageValueText" Grid.Row="3" Grid.Column="1" Style="{StaticResource DetailMetaValueText}" Margin="0,0,0,10"/>
+                                            <TextBlock Grid.Row="4" Grid.Column="0" Text="出品时间" Style="{StaticResource DetailMetaLabelText}" Margin="0,0,0,10"/>
+                                            <TextBlock x:Name="MetaProducedAtValueText" Grid.Row="4" Grid.Column="1" Style="{StaticResource DetailMetaValueText}" Margin="0,0,0,10"/>
+                                            <TextBlock Grid.Row="5" Grid.Column="0" Text="录入时间" Style="{StaticResource DetailMetaLabelText}"/>
+                                            <TextBlock x:Name="MetaImportedAtValueText" Grid.Row="5" Grid.Column="1" Style="{StaticResource DetailMetaValueText}"/>
+                                        </Grid>
+                                    </StackPanel>
+                                </Border>
+                            </Grid>
                         </StackPanel>
 
                         <!-- Tab bar (切换视频/图集) -->
@@ -2772,21 +2856,7 @@
                     </StackPanel>
                 </ScrollViewer>
 
-                <!-- 4: Bottom info bar -->
-                <Border Grid.Row="3" Padding="8,8,8,0" BorderThickness="0,1,0,0" BorderBrush="{DynamicResource Brush.BorderSubtle}">
-                    <Grid>
-                        <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="Auto"/>
-                            <ColumnDefinition Width="*"/>
-                            <ColumnDefinition Width="Auto"/>
-                        </Grid.ColumnDefinitions>
-                        <Button x:Name="DetailPlayAllButton" Content="▶ 播放全部"
-                                Click="DetailPlayAll_Click"
-                                Style="{StaticResource AppButton}" MinHeight="30" Padding="12,4" FontSize="12"/>
-                        <TextBlock Grid.Column="2" x:Name="DetailInfoBarText"
-                                   FontSize="11" Foreground="{DynamicResource Brush.TextMuted}" VerticalAlignment="Center"/>
-                    </Grid>
-                </Border>
+                <TextBlock x:Name="DetailInfoBarText" Visibility="Collapsed"/>
             </Grid>
         </Border>
 
