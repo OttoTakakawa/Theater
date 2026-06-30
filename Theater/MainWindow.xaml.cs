@@ -1,6 +1,7 @@
 using Theater.Models;
 using Theater.Services;
 using Theater.Videos;
+using Theater.Videos.Models;
 using Microsoft.VisualBasic;
 using System.Collections.ObjectModel;
 using System.Diagnostics;
@@ -91,6 +92,7 @@ public partial class MainWindow : Window
     private readonly UpdateService _updateService;
     private readonly Theater.Videos.Services.TimelineThumbnailCache _detailThumbnailCache;
     private readonly ObservableCollection<DetailVideoRow> _detailVideoRows = new();
+    private readonly ObservableCollection<DetailMarkerGroup> _detailMarkerGroups = new();
     private CancellationTokenSource? _detailVideoThumbCts;
     private string _detailVideoViewMode = "list";
     private MangaBook? _currentBook;
@@ -199,6 +201,7 @@ public partial class MainWindow : Window
     public RangeObservableCollection<MangaBook> FavoriteShowcaseBooks { get; } = [];
     public RangeObservableCollection<MangaBook> RecentlyAddedBooks { get; } = [];
     public RangeObservableCollection<PageCatalogItem> DetailPageCatalogItems { get; } = [];
+    public ObservableCollection<DetailMarkerGroup> DetailMarkerGroups => _detailMarkerGroups;
 
     public MainWindow()
     {
@@ -4464,6 +4467,7 @@ public partial class MainWindow : Window
     private void FillMetadataEditors(MangaBook book)
     {
         DetailPanelGrid.DataContext = book;
+        RefreshDetailMarkerGroups(book);
         TitleBox.Text = book.Title;
         AuthorBox.Text = book.Author;
         RefreshEditAuthorOptions(book.Author);
@@ -4567,6 +4571,46 @@ public partial class MainWindow : Window
         OpenCurrentBookButton.Content = book.HasVideo ? "▶ 播放" : "开始阅读";
 
         BuildRatingStars(book);
+    }
+
+    private void RefreshDetailMarkerGroups(MangaBook book)
+    {
+        _detailMarkerGroups.Clear();
+        if (!book.HasVideo)
+        {
+            UpdateDetailMarkerEmptyState();
+            return;
+        }
+
+        foreach (var videoPath in book.VideoPaths)
+        {
+            var videoId = BookId.FromFolderPath(videoPath);
+            var markers = _database.LoadSegmentMarkers(videoId);
+            if (markers.Count == 0)
+            {
+                continue;
+            }
+
+            var group = new DetailMarkerGroup(videoPath);
+            foreach (var marker in markers)
+            {
+                group.Markers.Add(new DetailMarkerRow(videoPath, marker));
+            }
+            _detailMarkerGroups.Add(group);
+        }
+
+        UpdateDetailMarkerEmptyState();
+    }
+
+    private void UpdateDetailMarkerEmptyState()
+    {
+        if (DetailMarkerEmptyText is null)
+        {
+            return;
+        }
+
+        var hasMarkers = _detailMarkerGroups.Any(group => group.Markers.Count > 0);
+        DetailMarkerEmptyText.Visibility = hasMarkers ? Visibility.Collapsed : Visibility.Visible;
     }
 
     private static readonly SolidColorBrush RatingStarEmptyBrush = CreateFrozenBrush("#D1D5DB");
@@ -4707,6 +4751,211 @@ public partial class MainWindow : Window
         var isEmpty = !forceFilled && string.IsNullOrWhiteSpace(value);
         target.Text = isEmpty ? "未填写" : value;
         target.Style = (System.Windows.Style)FindResource(isEmpty ? "DetailMetaEmptyValueText" : "DetailMetaValueText");
+    }
+
+    private async void SetCoverFromClipboard_Click(object sender, RoutedEventArgs e)
+    {
+        if (_currentBook is null) return;
+        try
+        {
+            if (!System.Windows.Clipboard.ContainsImage())
+            {
+                StatusText.Text = "剪贴板中没有图片。";
+                return;
+            }
+
+            var image = System.Windows.Clipboard.GetImage();
+            if (image is null)
+            {
+                StatusText.Text = "无法读取剪贴板图片。";
+                return;
+            }
+
+            var targetPath = CreateCustomCoverPath(_currentBook, "clipboard");
+            SaveBitmapSourceAsPng(image, targetPath);
+            await ApplyCustomCoverAsync(_currentBook, targetPath, "已使用剪贴板图片设置封面。");
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or InvalidOperationException or System.Runtime.InteropServices.ExternalException)
+        {
+            AppLogger.Warn("cover-custom", $"Clipboard cover failed: {ex.Message}");
+            StatusText.Text = $"剪贴板封面设置失败：{ex.Message}";
+        }
+    }
+
+    private async void SetCoverFromFirstFrame_Click(object sender, RoutedEventArgs e)
+    {
+        if (_currentBook is null) return;
+        var videoPath = _currentBook.VideoPaths.FirstOrDefault();
+        if (string.IsNullOrWhiteSpace(videoPath) || !File.Exists(videoPath))
+        {
+            StatusText.Text = "没有可用的视频文件用于提取第一帧。";
+            return;
+        }
+
+        try
+        {
+            var source = await CreateTimelineCoverCopyAsync(videoPath, 500, "first-frame");
+            if (source is null)
+            {
+                StatusText.Text = "第一帧封面生成失败。";
+                return;
+            }
+
+            await ApplyCustomCoverAsync(_currentBook, source, "已使用第一帧设置封面。");
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or InvalidOperationException or NotSupportedException)
+        {
+            AppLogger.Warn("cover-custom", $"First frame cover failed: {ex.Message}");
+            StatusText.Text = $"第一帧封面设置失败：{ex.Message}";
+        }
+    }
+
+    private async void ClearCustomCover_Click(object sender, RoutedEventArgs e)
+    {
+        if (_currentBook is null) return;
+        _currentBook.CoverImagePath = "";
+        await ApplyCustomCoverAsync(_currentBook, "", "已清除自定义封面。");
+    }
+
+    private async void SetCoverFromMarker_Click(object sender, RoutedEventArgs e)
+    {
+        if (_currentBook is null || (sender as FrameworkElement)?.DataContext is not DetailMarkerRow row)
+        {
+            return;
+        }
+
+        try
+        {
+            var path = row.Marker.ThumbnailPath;
+            if (string.IsNullOrWhiteSpace(path) || !File.Exists(path))
+            {
+                path = await CreateTimelineCoverCopyAsync(row.VideoPath, row.Marker.TimeMs, $"marker-{row.Marker.Id}");
+            }
+            else
+            {
+                var target = CreateCustomCoverPath(_currentBook, $"marker-{row.Marker.Id}");
+                File.Copy(path, target, overwrite: true);
+                path = target;
+            }
+
+            if (string.IsNullOrWhiteSpace(path))
+            {
+                StatusText.Text = "段落标记缩略图不可用。";
+                return;
+            }
+
+            await ApplyCustomCoverAsync(_currentBook, path, $"已使用 {row.Marker.TimeText} 的段落缩略图设置封面。");
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or InvalidOperationException or NotSupportedException)
+        {
+            AppLogger.Warn("cover-custom", $"Marker cover failed: {ex.Message}");
+            StatusText.Text = $"段落缩略图封面设置失败：{ex.Message}";
+        }
+    }
+
+    private async Task<string?> CreateTimelineCoverCopyAsync(string videoPath, long timeMs, string reason)
+    {
+        if (_currentBook is null)
+        {
+            return null;
+        }
+
+        var video = new VideoItem
+        {
+            Id = BookId.FromFolderPath(videoPath),
+            FolderPath = videoPath
+        };
+        var sourcePath = await _detailThumbnailCache.GetOrCreateAsync(video, timeMs);
+        if (string.IsNullOrWhiteSpace(sourcePath) || !File.Exists(sourcePath))
+        {
+            return null;
+        }
+
+        var targetPath = CreateCustomCoverPath(_currentBook, reason);
+        File.Copy(sourcePath, targetPath, overwrite: true);
+        return targetPath;
+    }
+
+    private async Task ApplyCustomCoverAsync(MangaBook book, string coverPath, string statusMessage)
+    {
+        book.CoverImagePath = coverPath;
+        await Task.Run(() => _database.SaveMetadata(book));
+        _coverPipeline.ClearMemoryCache();
+        _coverCache.ClearAll();
+        book.CoverImage = null;
+        book.CoverImage = await _coverPipeline.LoadAsync(book);
+        book.NotifyAll();
+        FillMetadataEditors(book);
+        ScheduleBookViewRefresh(refreshShelfOverview: false, resetPage: false);
+        RefreshHomeShelves();
+        StatusText.Text = statusMessage;
+    }
+
+    private string CreateCustomCoverPath(MangaBook book, string reason)
+    {
+        Directory.CreateDirectory(_storage.CustomCoverPath);
+        var seed = $"{book.Id}|{reason}|{DateTimeOffset.UtcNow:O}";
+        var hash = Convert.ToHexString(System.Security.Cryptography.SHA256.HashData(System.Text.Encoding.UTF8.GetBytes(seed))).ToLowerInvariant()[..16];
+        return Path.Combine(_storage.CustomCoverPath, $"{book.Id}_{hash}.png");
+    }
+
+    private static void SaveBitmapSourceAsPng(System.Windows.Media.Imaging.BitmapSource source, string path)
+    {
+        Directory.CreateDirectory(Path.GetDirectoryName(path)!);
+        var encoder = new System.Windows.Media.Imaging.PngBitmapEncoder();
+        encoder.Frames.Add(System.Windows.Media.Imaging.BitmapFrame.Create(source));
+        using var stream = File.Create(path);
+        encoder.Save(stream);
+    }
+
+    private async void EditDetailMarker_Click(object sender, RoutedEventArgs e)
+    {
+        if ((sender as FrameworkElement)?.DataContext is not DetailMarkerRow row)
+        {
+            return;
+        }
+
+        var marker = row.Marker;
+        var dialog = new SegmentMarkerEditDialog(marker) { Owner = this };
+        if (dialog.ShowDialog() != true)
+        {
+            return;
+        }
+
+        marker.Title = dialog.ResultTitle;
+        marker.Note = dialog.ResultNote;
+        marker.Color = dialog.ResultColor;
+        await Task.Run(() => _database.UpsertSegmentMarker(marker));
+        if (_currentBook is not null)
+        {
+            RefreshDetailMarkerGroups(_currentBook);
+        }
+        StatusText.Text = $"已更新段落标记：{marker.TimeText}";
+    }
+
+    private async void DeleteDetailMarker_Click(object sender, RoutedEventArgs e)
+    {
+        if ((sender as FrameworkElement)?.DataContext is not DetailMarkerRow row)
+        {
+            return;
+        }
+
+        var result = System.Windows.MessageBox.Show(
+            $"确定删除段落标记“{row.Marker.Title}”？",
+            "删除段落标记",
+            MessageBoxButton.YesNo,
+            MessageBoxImage.Warning);
+        if (result != MessageBoxResult.Yes)
+        {
+            return;
+        }
+
+        await Task.Run(() => _database.DeleteSegmentMarker(row.Marker.Id));
+        if (_currentBook is not null)
+        {
+            RefreshDetailMarkerGroups(_currentBook);
+        }
+        StatusText.Text = "段落标记已删除。";
     }
 
     private void SetDetailVisible(bool visible)
@@ -8930,4 +9179,53 @@ public sealed class DetailVideoRow : System.ComponentModel.INotifyPropertyChange
     public event System.ComponentModel.PropertyChangedEventHandler? PropertyChanged;
     private void OnPropertyChanged([System.Runtime.CompilerServices.CallerMemberName] string? name = null)
         => PropertyChanged?.Invoke(this, new System.ComponentModel.PropertyChangedEventArgs(name));
+}
+
+public sealed class DetailMarkerGroup
+{
+    public string VideoPath { get; }
+    public string VideoFileName { get; }
+    public ObservableCollection<DetailMarkerRow> Markers { get; } = [];
+
+    public DetailMarkerGroup(string videoPath)
+    {
+        VideoPath = videoPath;
+        try { VideoFileName = System.IO.Path.GetFileName(videoPath); }
+        catch { VideoFileName = videoPath; }
+    }
+}
+
+public sealed class DetailMarkerRow
+{
+    public string VideoPath { get; }
+    public VideoSegmentMarker Marker { get; }
+
+    public DetailMarkerRow(string videoPath, VideoSegmentMarker marker)
+    {
+        VideoPath = videoPath;
+        Marker = marker;
+    }
+
+    public string HeaderText => string.IsNullOrWhiteSpace(Marker.Title)
+        ? Marker.TimeText
+        : $"{Marker.TimeText} · {Marker.Title}";
+
+    public string NoteText => string.IsNullOrWhiteSpace(Marker.Note) ? "无备注" : Marker.Note;
+
+    public System.Windows.Media.Brush ColorBrush
+    {
+        get
+        {
+            try
+            {
+                var brush = new SolidColorBrush((System.Windows.Media.Color)System.Windows.Media.ColorConverter.ConvertFromString(Marker.Color));
+                brush.Freeze();
+                return brush;
+            }
+            catch
+            {
+                return System.Windows.Media.Brushes.Orange;
+            }
+        }
+    }
 }

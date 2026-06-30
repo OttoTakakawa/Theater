@@ -404,7 +404,7 @@ public sealed class MangaBook : INotifyPropertyChanged
     public static readonly string[] StyleNames = ["书脊卡片", "纯图卡片", "圆角卡片"];
     public string StyleName => StyleNames[BookStyleIndex];
     public int BookStyleIndex => BookStyle >= 0 ? BookStyle % 3 : (Id.GetHashCode() & 0x7FFFFFFF) % 3;
-    public double BookWidth => HasVideo ? 354 : BookStyleIndex switch
+    public double BookWidth => HasVideo ? 346 : BookStyleIndex switch
     {
         0 => 138,
         1 => 154,
@@ -418,8 +418,8 @@ public sealed class MangaBook : INotifyPropertyChanged
         2 => 206,
         _ => 214
     };
-    public double CoverWidth => HasVideo ? 354 : (BookStyleIndex == 0 ? 150 : BookStyleIndex == 1 ? 154 : 140);
-    public double CoverHeight => HasVideo ? 199.125 : (BookStyleIndex == 0 ? 214 : BookStyleIndex == 1 ? 198 : 204);
+    public double CoverWidth => HasVideo ? 346 : (BookStyleIndex == 0 ? 150 : BookStyleIndex == 1 ? 154 : 140);
+    public double CoverHeight => HasVideo ? 194.625 : (BookStyleIndex == 0 ? 214 : BookStyleIndex == 1 ? 198 : 204);
     public double SpineWidth => HasVideo ? 0 : BookStyleIndex switch
     {
         0 => 10,

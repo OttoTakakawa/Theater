@@ -393,6 +393,7 @@ public sealed partial class LibraryDatabase
                 is_favorite = $isFavorite,
                 rating = $rating,
                 is_privacy_cover = $isPrivacyCover,
+                cover_image_path = $coverImagePath,
                 last_opened_at = $lastOpenedAt,
                 updated_at = $updatedAt
             WHERE id = $id;
@@ -414,6 +415,7 @@ public sealed partial class LibraryDatabase
         command.Parameters.AddWithValue("$isFavorite", book.IsFavorite ? 1 : 0);
         command.Parameters.AddWithValue("$rating", Math.Clamp(book.Rating, 0, 5));
         command.Parameters.AddWithValue("$isPrivacyCover", book.IsPrivacyCover ? 1 : 0);
+        command.Parameters.AddWithValue("$coverImagePath", book.CoverImagePath);
         command.Parameters.AddWithValue("$lastOpenedAt", book.LastOpenedAt);
         command.Parameters.AddWithValue("$updatedAt", DateTimeOffset.Now.ToString("O"));
         command.ExecuteNonQuery();

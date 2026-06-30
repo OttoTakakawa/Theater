@@ -8,6 +8,7 @@ public sealed class AppStorage
     public string Root { get; }
     public string DatabasePath { get; }
     public string CoverCachePath { get; }
+    public string CustomCoverPath { get; }
     public string LogsPath { get; }
     public string BackupPath { get; }
     public string PendingRestoreDatabasePath { get; }
@@ -22,6 +23,7 @@ public sealed class AppStorage
         UsesCustomRoot = !Path.GetFullPath(Root).Equals(Path.GetFullPath(DefaultRoot), StringComparison.OrdinalIgnoreCase);
         DatabasePath = Path.Combine(Root, "app.db");
         CoverCachePath = Path.Combine(Root, "cache", "covers");
+        CustomCoverPath = Path.Combine(Root, "custom-covers");
         LogsPath = Path.Combine(Root, "logs");
         BackupPath = Path.Combine(Root, "backups");
         PendingRestoreDatabasePath = Path.Combine(Root, PendingRestoreDatabaseFileName);
@@ -31,6 +33,7 @@ public sealed class AppStorage
     {
         Directory.CreateDirectory(Root);
         Directory.CreateDirectory(CoverCachePath);
+        Directory.CreateDirectory(CustomCoverPath);
         Directory.CreateDirectory(LogsPath);
         Directory.CreateDirectory(BackupPath);
         ApplyPendingDatabaseRestore();
