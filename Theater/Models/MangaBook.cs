@@ -125,6 +125,7 @@ public sealed class MangaBook : INotifyPropertyChanged
             OnPropertyChanged();
             OnPropertyChanged(nameof(HasRating));
             OnPropertyChanged(nameof(RatingText));
+            OnPropertyChanged(nameof(RatingStarsText));
             OnPropertyChanged(nameof(VideoRatingBadgeText));
         }
     }
@@ -361,11 +362,6 @@ public sealed class MangaBook : INotifyPropertyChanged
                 parts.Add(WorkCategoryText);
             }
 
-            if (!string.IsNullOrWhiteSpace(VideoDurationText))
-            {
-                parts.Add(VideoDurationText);
-            }
-
             return string.Join(" · ", parts);
         }
     }
@@ -408,22 +404,22 @@ public sealed class MangaBook : INotifyPropertyChanged
     public static readonly string[] StyleNames = ["书脊卡片", "纯图卡片", "圆角卡片"];
     public string StyleName => StyleNames[BookStyleIndex];
     public int BookStyleIndex => BookStyle >= 0 ? BookStyle % 3 : (Id.GetHashCode() & 0x7FFFFFFF) % 3;
-    public double BookWidth => HasVideo ? 322 : BookStyleIndex switch
+    public double BookWidth => HasVideo ? 354 : BookStyleIndex switch
     {
         0 => 138,
         1 => 154,
         2 => 132,
         _ => 138
     };
-    public double BookHeight => HasVideo ? 360 : BookStyleIndex switch
+    public double BookHeight => HasVideo ? 340 : BookStyleIndex switch
     {
         0 => 214,
         1 => 198,
         2 => 206,
         _ => 214
     };
-    public double CoverWidth => HasVideo ? 322 : (BookStyleIndex == 0 ? 150 : BookStyleIndex == 1 ? 154 : 140);
-    public double CoverHeight => HasVideo ? 181 : (BookStyleIndex == 0 ? 214 : BookStyleIndex == 1 ? 198 : 204);
+    public double CoverWidth => HasVideo ? 354 : (BookStyleIndex == 0 ? 150 : BookStyleIndex == 1 ? 154 : 140);
+    public double CoverHeight => HasVideo ? 199.125 : (BookStyleIndex == 0 ? 214 : BookStyleIndex == 1 ? 198 : 204);
     public double SpineWidth => HasVideo ? 0 : BookStyleIndex switch
     {
         0 => 10,

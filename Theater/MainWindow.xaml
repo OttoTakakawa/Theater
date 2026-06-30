@@ -838,24 +838,22 @@
                                 </Style>
                             </TextBlock.Style>
                         </TextBlock>
-                        <!-- 3. 有评分时才显示 -->
-                        <TextBlock Text="{Binding VideoRatingBadgeText}"
-                                   Foreground="#A16207"
-                                   FontSize="12"
-                                   FontWeight="SemiBold"
-                                   Margin="0,7,0,0"
-                                   ToolTip="{Binding RatingText}">
-                            <TextBlock.Style>
-                                <Style TargetType="TextBlock">
-                                    <Setter Property="Visibility" Value="Visible"/>
-                                    <Style.Triggers>
-                                        <Trigger Property="Text" Value="">
-                                            <Setter Property="Visibility" Value="Collapsed"/>
-                                        </Trigger>
-                                    </Style.Triggers>
-                                </Style>
-                            </TextBlock.Style>
-                        </TextBlock>
+                        <!-- 3. 完整评分 + 轻量元信息 -->
+                        <DockPanel Margin="0,7,0,0" LastChildFill="True">
+                            <TextBlock DockPanel.Dock="Left"
+                                       Text="{Binding RatingStarsText}"
+                                       Foreground="#E4B95F"
+                                       FontSize="12"
+                                       VerticalAlignment="Center"
+                                       ToolTip="{Binding RatingText}"/>
+                            <TextBlock Text="{Binding VideoCardMetaText}"
+                                       Foreground="{DynamicResource Brush.TextMuted}"
+                                       FontSize="11"
+                                       FontWeight="SemiBold"
+                                       Margin="8,0,0,0"
+                                       VerticalAlignment="Center"
+                                       TextTrimming="CharacterEllipsis"/>
+                        </DockPanel>
                         <!-- 视频缺失标签 -->
                         <Border Padding="6,2" CornerRadius="{StaticResource RadiusControl}"
                                 Background="#FFF7ED" BorderBrush="#FDBA74" BorderThickness="1"
@@ -2242,7 +2240,7 @@
                 Margin="26"
                 Padding="0"
                 CornerRadius="26"
-                Background="#F8F5EF"
+                Background="{DynamicResource Brush.Surface}"
                 BorderBrush="{DynamicResource Brush.BorderSubtle}"
                 BorderThickness="1"
                 Effect="{StaticResource PanelShadow}">
@@ -2295,7 +2293,7 @@
                         <StackPanel x:Name="ReadOnlyInfoPanel">
                             <Border Padding="28"
                                     CornerRadius="24"
-                                    Background="#FFFCF7"
+                                    Background="{DynamicResource Brush.Surface}"
                                     BorderBrush="{DynamicResource Brush.BorderSubtle}"
                                     BorderThickness="1"
                                     Effect="{StaticResource PanelShadow}">
@@ -2400,8 +2398,8 @@
                                         <WrapPanel Margin="0,18,0,0">
                                             <Border Padding="12,7"
                                                     CornerRadius="999"
-                                                    Background="#F1ECE4"
-                                                    BorderBrush="#E3D8CA"
+                                                    Background="{DynamicResource Brush.SurfaceMuted}"
+                                                    BorderBrush="{DynamicResource Brush.BorderSubtle}"
                                                     BorderThickness="1"
                                                     Margin="0,0,8,8">
                                                 <TextBlock x:Name="ReadingStatusInlineText"
@@ -2436,21 +2434,14 @@
                                             </ItemsControl.ItemsPanel>
                                             <ItemsControl.ItemTemplate>
                                                 <DataTemplate DataType="{x:Type models:TagChip}">
-                                                    <Border Padding="10,5"
-                                                            Margin="0,0,7,7"
-                                                            CornerRadius="999"
-                                                            Background="#EFEAE2"
-                                                            BorderBrush="#E3D8CA"
-                                                            BorderThickness="1"
+                                                    <Border Style="{StaticResource DetailHeroTagChipBorder}"
+                                                            Background="{Binding Color}"
                                                             MouseEnter="TagChip_MouseEnter"
                                                             MouseLeave="TagChip_MouseLeave"
                                                             PreviewMouseLeftButtonDown="TagChip_PreviewMouseLeftButtonDown"
                                                             PreviewMouseLeftButtonUp="TagChip_PreviewMouseLeftButtonUp"
                                                             MouseLeftButtonDown="TagChip_MouseLeftButtonDown">
-                                                        <TextBlock Text="{Binding Name}"
-                                                                   Foreground="#4B5563"
-                                                                   FontSize="12"
-                                                                   FontWeight="SemiBold"/>
+                                                        <TextBlock Text="{Binding Name}" Style="{StaticResource AppTagChipText}"/>
                                                     </Border>
                                                 </DataTemplate>
                                             </ItemsControl.ItemTemplate>
@@ -2520,7 +2511,7 @@
                                 <Border Grid.Column="0"
                                         Padding="22"
                                         CornerRadius="20"
-                                        Background="#FFFCF7"
+                                        Background="{DynamicResource Brush.Surface}"
                                         BorderBrush="{DynamicResource Brush.BorderSubtle}"
                                         BorderThickness="1">
                                     <StackPanel>
@@ -2533,7 +2524,7 @@
                                 <Border Grid.Column="2"
                                         Padding="22"
                                         CornerRadius="20"
-                                        Background="#FFFCF7"
+                                        Background="{DynamicResource Brush.Surface}"
                                         BorderBrush="{DynamicResource Brush.BorderSubtle}"
                                         BorderThickness="1">
                                     <StackPanel>
