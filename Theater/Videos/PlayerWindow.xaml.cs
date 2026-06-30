@@ -884,13 +884,39 @@ public partial class PlayerWindow : Window
     {
         if (!_isFullscreen) return;
         OverlayBar.Visibility = Visibility.Visible;
+        OverlayPopup.IsOpen = true;
+        UpdateOverlayPopupPlacement();
+        Dispatcher.BeginInvoke(new Action(UpdateOverlayPopupPlacement), DispatcherPriority.Loaded);
         Cursor = Cursors.Arrow;
     }
 
     private void HideOverlay()
     {
+        OverlayPopup.IsOpen = false;
         OverlayBar.Visibility = Visibility.Collapsed;
         if (_isFullscreen) Cursor = Cursors.None;
+    }
+
+    private void UpdateOverlayPopupPlacement()
+    {
+        if (!_isFullscreen || !OverlayPopup.IsOpen)
+        {
+            return;
+        }
+
+        OverlayBar.Width = Math.Max(0, StageRoot.ActualWidth);
+        OverlayBar.Measure(new System.Windows.Size(OverlayBar.Width, double.PositiveInfinity));
+        var overlayHeight = OverlayBar.ActualHeight > 0
+            ? OverlayBar.ActualHeight
+            : OverlayBar.DesiredSize.Height;
+
+        OverlayPopup.HorizontalOffset = 0;
+        OverlayPopup.VerticalOffset = Math.Max(0, StageRoot.ActualHeight - overlayHeight);
+    }
+
+    private void OverlayBar_SizeChanged(object sender, SizeChangedEventArgs e)
+    {
+        UpdateOverlayPopupPlacement();
     }
 
     private void Window_PreviewMouseMove(object sender, System.Windows.Input.MouseEventArgs e)
@@ -939,6 +965,7 @@ public partial class PlayerWindow : Window
     private void Window_SizeChanged(object sender, SizeChangedEventArgs e)
     {
         ApplyVideoViewAspectLayout();
+        UpdateOverlayPopupPlacement();
     }
 
     private void FlashBackdropDuringLayout()
@@ -1806,7 +1833,7 @@ public partial class PlayerWindow : Window
         FullscreenButton.Content = "⊡ 退出全屏";
         OverlayFullscreenButton.Content = "⊡ 退出";
         Cursor = Cursors.None;
-        OverlayBar.Visibility = Visibility.Collapsed;
+        HideOverlay();
         _controlsHideTimer.Stop();
         FlashBackdropDuringLayout();
         ApplyWindowModeVideoLayout();
@@ -1828,7 +1855,7 @@ public partial class PlayerWindow : Window
         if (_restoreWindowState == WindowState.Maximized) WindowState = WindowState.Maximized;
 
         BottomBar.Visibility = Visibility.Visible;
-        OverlayBar.Visibility = Visibility.Collapsed;
+        HideOverlay();
         SidePanelHoverZone.Visibility = Visibility.Collapsed;
         SidePanel.Visibility = _sidePanelVisibleBeforeFullscreen ? Visibility.Visible : Visibility.Collapsed;
         _sidePanelPinned = false;

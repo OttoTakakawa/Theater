@@ -223,114 +223,120 @@
                                    FontWeight="SemiBold"/>
                     </Border>
 
-                    <!-- 全屏半透明浮层：默认 Collapsed，鼠标近底时由代码后置唤起 -->
-                    <Border x:Name="OverlayBar"
-                            VerticalAlignment="Bottom"
-                            Padding="16,10"
-                            Background="#B30F172A"
-                            Visibility="Collapsed"
-                            Panel.ZIndex="5">
-                        <Grid>
-                            <Grid.RowDefinitions>
-                                <RowDefinition Height="Auto"/>
-                                <RowDefinition Height="Auto"/>
-                            </Grid.RowDefinitions>
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="Auto"/>
-                                <ColumnDefinition Width="*"/>
-                                <ColumnDefinition Width="Auto"/>
-                            </Grid.ColumnDefinitions>
-                            <StackPanel Grid.Row="0" Grid.Column="0" Orientation="Horizontal" VerticalAlignment="Center">
-                                <Button Style="{StaticResource PlayerButtonStyle}" Content="上一条" Click="PreviousVideoButton_Click"/>
-                                <Button x:Name="OverlayPlayPauseButton"
-                                        Style="{StaticResource PlayerButtonStyle}"
-                                        MinWidth="80"
-                                        Content="▶ 播放"
-                                        Click="PlayPauseButton_Click"/>
-                                <Button Style="{StaticResource PlayerButtonStyle}" Content="下一条" Click="NextVideoButton_Click"/>
-                            </StackPanel>
-                            <StackPanel Grid.Row="0" Grid.Column="2" Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Center">
-                                <Button x:Name="OverlayMuteButton"
-                                        Style="{StaticResource IconButtonStyle}"
-                                        Content="🔊"
-                                        FontSize="16"
-                                        Click="MuteButton_Click"/>
-                                <Button x:Name="OverlaySpeedButton"
-                                        Style="{StaticResource PlayerButtonStyle}"
-                                        Content="1.0×"
-                                        Click="SpeedButton_Click"/>
-                                <Button Style="{StaticResource PlayerButtonStyle}"
-                                        Content="+ 分段"
-                                        Click="AddMarkerButton_Click"/>
-                                <Button Style="{StaticResource PlayerButtonStyle}"
-                                        Content="F6 面板"
-                                        Click="MarkerListButton_Click"/>
-                                <Button x:Name="OverlayFullscreenButton"
-                                        Style="{StaticResource PlayerButtonStyle}"
-                                        Content="⊡ 退出"
-                                        Click="FullscreenButton_Click"/>
-                            </StackPanel>
-                            <TextBlock x:Name="OverlayPositionText"
-                                       Grid.Row="1"
-                                       Grid.Column="0"
-                                       VerticalAlignment="Center" Margin="0,0,10,0"
-                                       FontSize="13" Foreground="#F1F5F9" Text="0:00"/>
-                            <Grid x:Name="OverlayTimelineHost"
-                                  Grid.Row="1"
-                                  Grid.Column="1"
-                                  Height="24"
-                                  Background="Transparent"
-                                  Cursor="Hand"
-                                  MouseEnter="OverlayTimelineHost_MouseEnter"
-                                  MouseLeave="OverlayTimelineHost_MouseLeave"
-                                  MouseMove="OverlayTimelineHost_MouseMove"
-                                  MouseLeftButtonDown="OverlayTimelineHost_MouseLeftButtonDown"
-                                  MouseLeftButtonUp="OverlayTimelineHost_MouseLeftButtonUp"
-                                  SizeChanged="OverlayTimelineHost_SizeChanged">
-                                <Border x:Name="OverlayTrackBg"
-                                        Height="4" VerticalAlignment="Center" CornerRadius="{StaticResource RadiusProgress}"
-                                        Background="#55FFFFFF"
-                                        IsHitTestVisible="False"/>
-                                <Border x:Name="OverlayTrackFill"
-                                        Height="4" VerticalAlignment="Center"
-                                        HorizontalAlignment="Left" Width="0" CornerRadius="{StaticResource RadiusProgress}"
-                                        Background="#E2E8F0"
-                                        IsHitTestVisible="False"/>
-                                <Canvas x:Name="OverlaySegmentMarkerLayer"
-                                        Background="{x:Null}"
-                                        Height="24"
-                                        ClipToBounds="True"
-                                        SizeChanged="OverlaySegmentMarkerLayer_SizeChanged"/>
-                                <Ellipse x:Name="OverlayThumb"
-                                         Width="14" Height="14"
-                                         HorizontalAlignment="Left" VerticalAlignment="Center"
-                                         Margin="-7,0,0,0"
-                                         Fill="#FFFFFF" Stroke="#66FFFFFF" StrokeThickness="1"
-                                         IsHitTestVisible="False"/>
-                                <Popup x:Name="OverlayTimelineHoverTip"
-                                       PlacementTarget="{Binding ElementName=OverlayTimelineHost}"
-                                       Placement="RelativePoint"
-                                       AllowsTransparency="True"
-                                       StaysOpen="True"
-                                       IsHitTestVisible="False">
-                                    <Border Background="#E60F172A" BorderBrush="#334155" BorderThickness="1"
-                                            CornerRadius="{StaticResource RadiusClip}" Padding="6,3">
-                                        <TextBlock x:Name="OverlayTimelineHoverTipText"
-                                                   Foreground="#F1F5F9" FontFamily="Consolas" FontSize="11"/>
-                                    </Border>
-                                </Popup>
-                            </Grid>
-                            <TextBlock x:Name="OverlayDurationText"
-                                       Grid.Row="1"
-                                       Grid.Column="2"
-                                       VerticalAlignment="Center" Margin="10,0,0,0"
-                                       FontSize="13" Foreground="#CBD5E1" Text="0:00"/>
-                        </Grid>
-                    </Border>
-
                 </Grid>
             </vlc:VideoView.Content>
         </vlc:VideoView>
+
+        <!-- 全屏半透明浮层：Popup 使用独立窗口层，避免 LibVLC 原生视频 HWND 空域盖住进度条。 -->
+        <Popup x:Name="OverlayPopup"
+               PlacementTarget="{Binding ElementName=StageRoot}"
+               Placement="RelativePoint"
+               AllowsTransparency="True"
+               StaysOpen="True"
+               Focusable="False">
+        <Border x:Name="OverlayBar"
+                Padding="16,10"
+                Background="#B30F172A"
+                Visibility="Collapsed"
+                SizeChanged="OverlayBar_SizeChanged">
+            <Grid>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                </Grid.RowDefinitions>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+                <StackPanel Grid.Row="0" Grid.Column="0" Orientation="Horizontal" VerticalAlignment="Center">
+                    <Button Style="{StaticResource PlayerButtonStyle}" Content="上一条" Click="PreviousVideoButton_Click"/>
+                    <Button x:Name="OverlayPlayPauseButton"
+                            Style="{StaticResource PlayerButtonStyle}"
+                            MinWidth="80"
+                            Content="▶ 播放"
+                            Click="PlayPauseButton_Click"/>
+                    <Button Style="{StaticResource PlayerButtonStyle}" Content="下一条" Click="NextVideoButton_Click"/>
+                </StackPanel>
+                <StackPanel Grid.Row="0" Grid.Column="2" Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Center">
+                    <Button x:Name="OverlayMuteButton"
+                            Style="{StaticResource IconButtonStyle}"
+                            Content="🔊"
+                            FontSize="16"
+                            Click="MuteButton_Click"/>
+                    <Button x:Name="OverlaySpeedButton"
+                            Style="{StaticResource PlayerButtonStyle}"
+                            Content="1.0×"
+                            Click="SpeedButton_Click"/>
+                    <Button Style="{StaticResource PlayerButtonStyle}"
+                            Content="+ 分段"
+                            Click="AddMarkerButton_Click"/>
+                    <Button Style="{StaticResource PlayerButtonStyle}"
+                            Content="F6 面板"
+                            Click="MarkerListButton_Click"/>
+                    <Button x:Name="OverlayFullscreenButton"
+                            Style="{StaticResource PlayerButtonStyle}"
+                            Content="⊡ 退出"
+                            Click="FullscreenButton_Click"/>
+                </StackPanel>
+                <TextBlock x:Name="OverlayPositionText"
+                           Grid.Row="1"
+                           Grid.Column="0"
+                           VerticalAlignment="Center" Margin="0,0,10,0"
+                           FontSize="13" Foreground="#F1F5F9" Text="0:00"/>
+                <Grid x:Name="OverlayTimelineHost"
+                      Grid.Row="1"
+                      Grid.Column="1"
+                      Height="24"
+                      Background="Transparent"
+                      Cursor="Hand"
+                      MouseEnter="OverlayTimelineHost_MouseEnter"
+                      MouseLeave="OverlayTimelineHost_MouseLeave"
+                      MouseMove="OverlayTimelineHost_MouseMove"
+                      MouseLeftButtonDown="OverlayTimelineHost_MouseLeftButtonDown"
+                      MouseLeftButtonUp="OverlayTimelineHost_MouseLeftButtonUp"
+                      SizeChanged="OverlayTimelineHost_SizeChanged">
+                    <Border x:Name="OverlayTrackBg"
+                            Height="4" VerticalAlignment="Center" CornerRadius="{StaticResource RadiusProgress}"
+                            Background="#55FFFFFF"
+                            IsHitTestVisible="False"/>
+                    <Border x:Name="OverlayTrackFill"
+                            Height="4" VerticalAlignment="Center"
+                            HorizontalAlignment="Left" Width="0" CornerRadius="{StaticResource RadiusProgress}"
+                            Background="#E2E8F0"
+                            IsHitTestVisible="False"/>
+                    <Canvas x:Name="OverlaySegmentMarkerLayer"
+                            Background="{x:Null}"
+                            Height="24"
+                            ClipToBounds="True"
+                            SizeChanged="OverlaySegmentMarkerLayer_SizeChanged"/>
+                    <Ellipse x:Name="OverlayThumb"
+                             Width="14" Height="14"
+                             HorizontalAlignment="Left" VerticalAlignment="Center"
+                             Margin="-7,0,0,0"
+                             Fill="#FFFFFF" Stroke="#66FFFFFF" StrokeThickness="1"
+                             IsHitTestVisible="False"/>
+                    <Popup x:Name="OverlayTimelineHoverTip"
+                           PlacementTarget="{Binding ElementName=OverlayTimelineHost}"
+                           Placement="RelativePoint"
+                           AllowsTransparency="True"
+                           StaysOpen="True"
+                           IsHitTestVisible="False">
+                        <Border Background="#E60F172A" BorderBrush="#334155" BorderThickness="1"
+                                CornerRadius="{StaticResource RadiusClip}" Padding="6,3">
+                            <TextBlock x:Name="OverlayTimelineHoverTipText"
+                                       Foreground="#F1F5F9" FontFamily="Consolas" FontSize="11"/>
+                        </Border>
+                    </Popup>
+                </Grid>
+                <TextBlock x:Name="OverlayDurationText"
+                           Grid.Row="1"
+                           Grid.Column="2"
+                           VerticalAlignment="Center" Margin="10,0,0,0"
+                           FontSize="13" Foreground="#CBD5E1" Text="0:00"/>
+            </Grid>
+        </Border>
+        </Popup>
 
         <Border x:Name="LoadingOverlay"
                 Grid.Row="0"
