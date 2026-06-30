@@ -94,6 +94,7 @@ public partial class SettingsDialog : Window
         {
             "low" => 0,
             "high" => 2,
+            "original" => 3,
             _ => 1
         };
 
@@ -553,6 +554,7 @@ public partial class SettingsDialog : Window
         {
             0 => "low",
             2 => "high",
+            3 => "original",
             _ => "standard"
         };
         var oldCoverQuality = _database.LoadSetting(CoverQualitySettings.SettingKey, CoverQualitySettings.DefaultValue);

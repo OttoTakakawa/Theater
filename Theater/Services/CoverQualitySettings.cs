@@ -22,6 +22,12 @@ public static class CoverQualitySettings
     {
         return (settingValue ?? DefaultValue).Trim().ToLowerInvariant() switch
         {
+            "original" => new CoverQualityProfile
+            {
+                SettingValue = "original",
+                CacheDecodeWidth = 0,
+                DisplayDecodeWidth = 0
+            },
             "low" => new CoverQualityProfile
             {
                 SettingValue = "low",

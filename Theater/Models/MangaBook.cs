@@ -70,6 +70,7 @@ public sealed class MangaBook : INotifyPropertyChanged
             OnPropertyChanged();
             OnPropertyChanged(nameof(SizeText));
             OnPropertyChanged(nameof(LibraryMetaText));
+            OnPropertyChanged(nameof(VideoCardMetaText));
         }
     }
     public int CoverPageIndex { get; set; }
@@ -124,11 +125,13 @@ public sealed class MangaBook : INotifyPropertyChanged
             OnPropertyChanged();
             OnPropertyChanged(nameof(HasRating));
             OnPropertyChanged(nameof(RatingText));
+            OnPropertyChanged(nameof(VideoRatingBadgeText));
         }
     }
 
     public bool HasRating => _rating > 0;
     public string RatingText => _rating.ToString("0.#");
+    public string VideoRatingBadgeText => HasRating ? $"★ {RatingText}" : "";
     public string RatingStarsText
     {
         get
@@ -179,6 +182,7 @@ public sealed class MangaBook : INotifyPropertyChanged
             OnPropertyChanged(nameof(CoverHeight));
             OnPropertyChanged(nameof(VideoCountText));
             OnPropertyChanged(nameof(LibraryMetaText));
+            OnPropertyChanged(nameof(VideoCardMetaText));
         }
     }
 
@@ -216,6 +220,7 @@ public sealed class MangaBook : INotifyPropertyChanged
             OnPropertyChanged();
             OnPropertyChanged(nameof(VideoDurationText));
             OnPropertyChanged(nameof(LibraryMetaText));
+            OnPropertyChanged(nameof(VideoCardMetaText));
         }
     }
 
@@ -236,7 +241,7 @@ public sealed class MangaBook : INotifyPropertyChanged
     public bool HasImages => ImageSetCount > 0;
     public bool HasCover => !string.IsNullOrEmpty(CoverImagePath);
     public string VideoMissingText => !HasVideo ? "视频暂时不见了" : "";
-    public string VideoDurationText => DurationMs > 0 ? FormatVideoDuration(DurationMs) : HasVideo ? "--:--" : "";
+    public string VideoDurationText => DurationMs > 0 ? FormatVideoDuration(DurationMs) : "";
     public string VideoProgressText => LastPositionMs > 0 && DurationMs > 0
         ? $"{FormatVideoDuration(LastPositionMs)} / {VideoDurationText}"
         : "";
@@ -299,12 +304,15 @@ public sealed class MangaBook : INotifyPropertyChanged
         {
             _coverImage = value;
             OnPropertyChanged();
+            OnPropertyChanged(nameof(WorkCategoryText));
+            OnPropertyChanged(nameof(VideoCardMetaText));
         }
     }
 
     public string ProgressText => PageCount <= 0 ? "0 / 0" : $"{LastReadPageIndex + 1} / {PageCount}";
     public string PageCountText => $"{PageCount}页";
     public string SizeText => FormatSize(TotalBytes);
+    public string DisplayTitle => CleanDisplayTitle(Title);
 
     /// <summary>
     /// 从 tags 中提取"作品"分类下的值（日本AV/国产/欧美），用于卡片信息行。
@@ -338,6 +346,29 @@ public sealed class MangaBook : INotifyPropertyChanged
         : ReadingStatusText;
     public string ReadingMetaText => $"{ReadStateText} · {ProgressText}";
     public string ContinueActionText => HasVideo ? "继续观看" : "继续阅读";
+    public string VideoCardMetaText
+    {
+        get
+        {
+            var parts = new List<string>();
+            if (!string.IsNullOrWhiteSpace(SizeText))
+            {
+                parts.Add(SizeText);
+            }
+
+            if (!string.IsNullOrWhiteSpace(WorkCategoryText))
+            {
+                parts.Add(WorkCategoryText);
+            }
+
+            if (!string.IsNullOrWhiteSpace(VideoDurationText))
+            {
+                parts.Add(VideoDurationText);
+            }
+
+            return string.Join(" · ", parts);
+        }
+    }
     public string LibraryMetaText => HasVideo
         ? BuildVideoLibraryMetaText()
         : $"{ReadStateText} · {PageCountText} · {SizeText}";
@@ -354,7 +385,7 @@ public sealed class MangaBook : INotifyPropertyChanged
         var isCollection = VideoCount > 1 || HasImages;
         if (!isCollection)
         {
-            return $"🎬 {SizeText}";
+            return SizeText;
         }
 
         var parts = new List<string> { VideoCountText };
@@ -618,11 +649,47 @@ public sealed class MangaBook : INotifyPropertyChanged
 
     private static string FormatVideoDuration(long ms)
     {
-        if (ms <= 0) return "--:--";
+        if (ms <= 0) return "";
         var ts = TimeSpan.FromMilliseconds(ms);
         return ts.TotalHours >= 1
             ? $"{(int)ts.TotalHours}:{ts.Minutes:D2}:{ts.Seconds:D2}"
             : $"{ts.Minutes}:{ts.Seconds:D2}";
+    }
+
+    private static string CleanDisplayTitle(string value)
+    {
+        if (string.IsNullOrWhiteSpace(value))
+        {
+            return "";
+        }
+
+        var text = value.Trim();
+        while (text.StartsWith("[", StringComparison.Ordinal) && text.Contains(']'))
+        {
+            var end = text.IndexOf(']');
+            if (end < 0 || end >= Math.Min(text.Length - 1, 48))
+            {
+                break;
+            }
+
+            var bracketText = text[1..end];
+            if (!bracketText.Contains('.', StringComparison.Ordinal) && !bracketText.Contains("www", StringComparison.OrdinalIgnoreCase))
+            {
+                break;
+            }
+
+            text = text[(end + 1)..].TrimStart('_', '-', ' ', '.');
+        }
+
+        var extension = Path.GetExtension(text);
+        if (!string.IsNullOrEmpty(extension) && extension.Length <= 6)
+        {
+            text = text[..^extension.Length];
+        }
+
+        text = text.Replace('_', ' ').Replace('.', ' ').Replace('-', ' ');
+        var compacted = string.Join(" ", text.Split(' ', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries));
+        return string.IsNullOrWhiteSpace(compacted) ? value.Trim() : compacted;
     }
 
     private static IEnumerable<string> ParseJsonArray(string json)

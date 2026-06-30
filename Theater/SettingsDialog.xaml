@@ -114,13 +114,14 @@
                                         <ComboBoxItem Content="低"/>
                                         <ComboBoxItem Content="标准"/>
                                         <ComboBoxItem Content="高"/>
+                                        <ComboBoxItem Content="原图"/>
                                     </ComboBox>
                                     <Button Content="清理封面缓存"
                                             Click="ClearCoverCache_Click"
                                             Style="{StaticResource AppDialogGhostButton}"
                                             Margin="10,0,0,0"/>
                                 </StackPanel>
-                                <TextBlock Text="低：更快；标准：推荐；高：更清晰但占用更高。切换后会自动刷新封面缓存。"
+                                <TextBlock Text="低：更快；标准：推荐；高：更清晰；原图：不缩放封面，画质最高但内存与缓存占用最大。切换后会自动刷新封面缓存。"
                                            Foreground="{DynamicResource Brush.TextMuted}"
                                            FontSize="11"
                                            Margin="0,0,0,14"/>

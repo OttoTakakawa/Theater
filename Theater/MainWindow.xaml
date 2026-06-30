@@ -692,7 +692,7 @@
                     <!-- 视频封面 16:9 -->
                     <Grid Width="{Binding CoverWidth}" Height="{Binding CoverHeight}" HorizontalAlignment="Center"
                           Visibility="{Binding VideoCardVisibility}">
-                        <Border CornerRadius="{StaticResource RadiusPanel}" ClipToBounds="True" Background="#111827"
+                        <Border CornerRadius="16" ClipToBounds="True" Background="#111827"
                                 Effect="{StaticResource BookShadow}">
                             <Grid>
                                 <Image Source="{Binding CoverImage}" Stretch="UniformToFill"
@@ -706,7 +706,45 @@
                                         </LinearGradientBrush>
                                     </Rectangle.Fill>
                                 </Rectangle>
+                                <TextBlock Text="{Binding VideoCardMetaText}"
+                                           Margin="12,0,54,10"
+                                           VerticalAlignment="Bottom"
+                                           Foreground="#F8FAFC"
+                                           FontSize="11"
+                                           FontWeight="SemiBold"
+                                           TextTrimming="CharacterEllipsis">
+                                    <TextBlock.Style>
+                                        <Style TargetType="TextBlock">
+                                            <Setter Property="Visibility" Value="Visible"/>
+                                            <Style.Triggers>
+                                                <Trigger Property="Text" Value="">
+                                                    <Setter Property="Visibility" Value="Collapsed"/>
+                                                </Trigger>
+                                            </Style.Triggers>
+                                        </Style>
+                                    </TextBlock.Style>
+                                </TextBlock>
                             </Grid>
+                        </Border>
+                        <Border Width="38"
+                                Height="38"
+                                CornerRadius="19"
+                                Background="#CC111827"
+                                BorderBrush="#33FFFFFF"
+                                BorderThickness="1"
+                                HorizontalAlignment="Right"
+                                VerticalAlignment="Bottom"
+                                Margin="0,0,10,10"
+                                Cursor="Hand"
+                                MouseLeftButtonDown="CardPlayButton_Click"
+                                ToolTip="播放">
+                            <TextBlock Text="▶"
+                                       Foreground="#FFFFFF"
+                                       FontSize="15"
+                                       FontWeight="SemiBold"
+                                       HorizontalAlignment="Center"
+                                       VerticalAlignment="Center"
+                                       Margin="2,0,0,0"/>
                         </Border>
                         <CheckBox IsChecked="{Binding IsSelectedForBatch, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
                                   Style="{StaticResource BatchSelectCheckBox}"
@@ -809,9 +847,19 @@
                                   Margin="6,6,0,0"/>
                     </Grid>
 
-                    <StackPanel Margin="0,10,0,0">
+                    <StackPanel Margin="2,10,2,0">
                         <!-- 1. 标题 -->
-                        <TextBlock Text="{Binding Title}" FontWeight="Black" FontSize="14" Foreground="{DynamicResource Brush.TextPrimary}" TextTrimming="CharacterEllipsis" TextAlignment="Center"/>
+                        <TextBlock Text="{Binding DisplayTitle}"
+                                   FontWeight="SemiBold"
+                                   FontSize="14"
+                                   Foreground="{DynamicResource Brush.TextPrimary}"
+                                   TextTrimming="CharacterEllipsis"
+                                   TextWrapping="Wrap"
+                                   MaxHeight="38"
+                                   LineHeight="18"
+                                   LineStackingStrategy="BlockLineHeight"
+                                   TextAlignment="Left"
+                                   ToolTip="{Binding Title}"/>
                         <!-- 2. 别名 -->
                         <TextBlock Text="{Binding ForeignName}" Margin="0,3,0,0" Foreground="{DynamicResource Brush.TextMuted}" FontSize="11" TextTrimming="CharacterEllipsis" TextAlignment="Center" ToolTip="{Binding ForeignName}">
                             <TextBlock.Style>
@@ -825,27 +873,42 @@
                                 </Style>
                             </TextBlock.Style>
                         </TextBlock>
-                        <!-- 3. 体积 · ⏱时长 · 🎬大类 -->
-                        <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,6,0,0">
-                            <TextBlock Text="{Binding SizeText}" Foreground="{DynamicResource Brush.TextMuted}" FontSize="11" FontWeight="SemiBold"/>
-                            <TextBlock Text=" · ⏱" Foreground="{DynamicResource Brush.TextMuted}" FontSize="11" Margin="4,0,2,0"/>
-                            <TextBlock Text="{Binding VideoDurationText}" Foreground="{DynamicResource Brush.TextMuted}" FontSize="11" FontWeight="SemiBold"/>
-                            <TextBlock Text=" · 🎬" Foreground="{DynamicResource Brush.TextMuted}" FontSize="11" Margin="4,0,2,0"/>
-                            <TextBlock Text="{Binding WorkCategoryText}" Foreground="{DynamicResource Brush.TextMuted}" FontSize="11" FontWeight="SemiBold"/>
-                        </StackPanel>
-                        <!-- 4. 评分 + 播放按钮 -->
-                        <DockPanel Margin="0,7,0,0" LastChildFill="True">
-                            <Border DockPanel.Dock="Right"
-                                    CornerRadius="{StaticResource RadiusControl}"
-                                    Background="{DynamicResource Brush.Accent}"
-                                    Padding="9,3" Margin="6,0,0,0"
-                                    Cursor="Hand"
-                                    MouseLeftButtonDown="CardPlayButton_Click"
-                                    ToolTip="播放">
-                                <TextBlock Text="▶ 播放" FontSize="10" Foreground="#FFFFFF" FontWeight="SemiBold"/>
-                            </Border>
-                            <TextBlock Text="{Binding RatingStarsText}" Foreground="#E4B95F" FontSize="12" VerticalAlignment="Center" ToolTip="{Binding RatingText}"/>
-                        </DockPanel>
+                        <!-- 3. 轻量元信息 -->
+                        <TextBlock Text="{Binding VideoCardMetaText}"
+                                   Foreground="{DynamicResource Brush.TextMuted}"
+                                   FontSize="11"
+                                   FontWeight="SemiBold"
+                                   Margin="0,6,0,0"
+                                   TextTrimming="CharacterEllipsis">
+                            <TextBlock.Style>
+                                <Style TargetType="TextBlock">
+                                    <Setter Property="Visibility" Value="Visible"/>
+                                    <Style.Triggers>
+                                        <Trigger Property="Text" Value="">
+                                            <Setter Property="Visibility" Value="Collapsed"/>
+                                        </Trigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </TextBlock.Style>
+                        </TextBlock>
+                        <!-- 4. 有评分时才显示 -->
+                        <TextBlock Text="{Binding VideoRatingBadgeText}"
+                                   Foreground="#A16207"
+                                   FontSize="12"
+                                   FontWeight="SemiBold"
+                                   Margin="0,7,0,0"
+                                   ToolTip="{Binding RatingText}">
+                            <TextBlock.Style>
+                                <Style TargetType="TextBlock">
+                                    <Setter Property="Visibility" Value="Visible"/>
+                                    <Style.Triggers>
+                                        <Trigger Property="Text" Value="">
+                                            <Setter Property="Visibility" Value="Collapsed"/>
+                                        </Trigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </TextBlock.Style>
+                        </TextBlock>
                         <!-- 视频缺失标签 -->
                         <Border Padding="6,2" CornerRadius="{StaticResource RadiusControl}"
                                 Background="#FFF7ED" BorderBrush="#FDBA74" BorderThickness="1"
@@ -898,9 +961,13 @@
                             </ItemsControl.ItemsPanel>
                             <ItemsControl.ItemTemplate>
                                 <DataTemplate>
-                                    <Border Style="{StaticResource CardTagChipBorder}"
-                                            MaxWidth="170"
-                                            Background="{Binding Color}"
+                                    <Border MaxWidth="170"
+                                            Padding="8,3"
+                                            Margin="0,0,5,5"
+                                            CornerRadius="999"
+                                            Background="#EFEAE2"
+                                            BorderBrush="#E2D8CA"
+                                            BorderThickness="1"
                                             MouseEnter="TagChip_MouseEnter"
                                             MouseLeave="TagChip_MouseLeave"
                                             PreviewMouseLeftButtonDown="TagChip_PreviewMouseLeftButtonDown"
@@ -909,8 +976,9 @@
                                             MouseLeftButtonDown="TagChip_MouseLeftButtonDown">
                                         <TextBlock Text="{Binding Name}"
                                                    MaxWidth="148"
-                                                   Style="{StaticResource AppTagChipText}"
+                                                   Foreground="#4B5563"
                                                    FontSize="11"
+                                                   FontWeight="SemiBold"
                                                    LineHeight="14"
                                                    LineStackingStrategy="BlockLineHeight"
                                                    TextWrapping="NoWrap"
