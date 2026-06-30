@@ -23,7 +23,7 @@ public sealed partial class LibraryDatabase
             tags = CASE WHEN books.tags = '' THEN excluded.tags ELSE books.tags END,
             produced_at = excluded.produced_at,
             imported_at = CASE WHEN books.imported_at = '' THEN excluded.imported_at ELSE books.imported_at END,
-            summary = excluded.summary,
+            summary = CASE WHEN $summaryLoaded = 1 THEN excluded.summary ELSE books.summary END,
             folder_path = excluded.folder_path,
             page_count = excluded.page_count,
             total_bytes = excluded.total_bytes,
@@ -239,7 +239,7 @@ public sealed partial class LibraryDatabase
             """
             SELECT id, title, author, tags, folder_path, page_count, cover_page_index,
                    last_read_page_index, is_missing
-                 , character_name, produced_at, imported_at, summary, book_style, is_hidden, read_count, reading_status, is_favorite, foreign_name, total_bytes, is_privacy_cover, rating, last_opened_at
+                 , character_name, produced_at, imported_at, book_style, is_hidden, read_count, reading_status, is_favorite, foreign_name, total_bytes, is_privacy_cover, rating, last_opened_at
                  , duration_ms, last_position_ms, video_paths, image_set_paths, cover_image_path
             FROM books;
             """;
@@ -261,25 +261,49 @@ public sealed partial class LibraryDatabase
                 CharacterName = reader.GetString(9),
                 ProducedAt = reader.GetString(10),
                 ImportedAt = reader.GetString(11),
-                Summary = reader.GetString(12),
-                BookStyle = reader.GetInt32(13),
-                IsHidden = reader.GetInt32(14) == 1,
-                ReadCount = reader.GetInt32(15),
-                ReadingStatus = reader.GetString(16),
-                IsFavorite = reader.GetInt32(17) == 1,
-                ForeignName = reader.GetString(18),
-                TotalBytes = reader.GetInt64(19),
-                IsPrivacyCover = reader.GetInt32(20) == 1,
-                Rating = reader.GetDouble(21),
-                LastOpenedAt = reader.IsDBNull(22) ? "" : reader.GetString(22),
-                DurationMs = reader.IsDBNull(23) ? 0 : reader.GetInt64(23),
-                LastPositionMs = reader.IsDBNull(24) ? 0 : reader.GetInt64(24),
-                VideoPathsJson = reader.IsDBNull(25) ? "[]" : reader.GetString(25),
-                ImageSetPathsJson = reader.IsDBNull(26) ? "[]" : reader.GetString(26),
-                CoverImagePath = reader.IsDBNull(27) ? "" : reader.GetString(27)
+                BookStyle = reader.GetInt32(12),
+                IsHidden = reader.GetInt32(13) == 1,
+                ReadCount = reader.GetInt32(14),
+                ReadingStatus = reader.GetString(15),
+                IsFavorite = reader.GetInt32(16) == 1,
+                ForeignName = reader.GetString(17),
+                TotalBytes = reader.GetInt64(18),
+                IsPrivacyCover = reader.GetInt32(19) == 1,
+                Rating = reader.GetDouble(20),
+                LastOpenedAt = reader.IsDBNull(21) ? "" : reader.GetString(21),
+                DurationMs = reader.IsDBNull(22) ? 0 : reader.GetInt64(22),
+                LastPositionMs = reader.IsDBNull(23) ? 0 : reader.GetInt64(23),
+                VideoPathsJson = reader.IsDBNull(24) ? "[]" : reader.GetString(24),
+                ImageSetPathsJson = reader.IsDBNull(25) ? "[]" : reader.GetString(25),
+                CoverImagePath = reader.IsDBNull(26) ? "" : reader.GetString(26),
+                IsSummaryLoaded = false
             };
             result[book.FolderPath] = book;
         }
+        return result;
+    }
+
+    public string LoadBookSummary(string bookId)
+    {
+        using var connection = Open();
+        using var command = connection.CreateCommand();
+        command.CommandText = "SELECT summary FROM books WHERE id = $id LIMIT 1;";
+        command.Parameters.AddWithValue("$id", bookId);
+        return command.ExecuteScalar() as string ?? "";
+    }
+
+    public Dictionary<string, string> LoadBookSummaries()
+    {
+        using var connection = Open();
+        using var command = connection.CreateCommand();
+        command.CommandText = "SELECT id, summary FROM books WHERE summary <> '';";
+        using var reader = command.ExecuteReader();
+        var result = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+        while (reader.Read())
+        {
+            result[reader.GetString(0)] = reader.GetString(1);
+        }
+
         return result;
     }
 
@@ -361,7 +385,7 @@ public sealed partial class LibraryDatabase
                 tags = $tags,
                 produced_at = $producedAt,
                 imported_at = $importedAt,
-                summary = $summary,
+                summary = CASE WHEN $summaryLoaded = 1 THEN $summary ELSE summary END,
                 cover_page_index = $coverPageIndex,
                 book_style = $bookStyle,
                 read_count = $readCount,
@@ -382,6 +406,7 @@ public sealed partial class LibraryDatabase
         command.Parameters.AddWithValue("$producedAt", book.ProducedAt);
         command.Parameters.AddWithValue("$importedAt", book.ImportedAt);
         command.Parameters.AddWithValue("$summary", book.Summary);
+        command.Parameters.AddWithValue("$summaryLoaded", book.IsSummaryLoaded ? 1 : 0);
         command.Parameters.AddWithValue("$coverPageIndex", book.CoverPageIndex);
         command.Parameters.AddWithValue("$bookStyle", book.BookStyle);
         command.Parameters.AddWithValue("$readCount", book.ReadCount);
@@ -1369,6 +1394,7 @@ public sealed record BookmarkRecord(string BookId, int PageIndex, string Created
         command.Parameters.AddWithValue("$producedAt", book.ProducedAt);
         command.Parameters.AddWithValue("$importedAt", string.IsNullOrWhiteSpace(book.ImportedAt) ? DateTimeOffset.Now.ToString("yyyy-MM-dd") : book.ImportedAt);
         command.Parameters.AddWithValue("$summary", book.Summary);
+        command.Parameters.AddWithValue("$summaryLoaded", book.IsSummaryLoaded ? 1 : 0);
         command.Parameters.AddWithValue("$folderPath", book.FolderPath);
         command.Parameters.AddWithValue("$pageCount", book.PageCount);
         command.Parameters.AddWithValue("$totalBytes", book.TotalBytes);

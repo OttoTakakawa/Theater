@@ -48,6 +48,7 @@ public sealed class MangaBook : INotifyPropertyChanged
         }
     }
     public string Summary { get; set; } = "";
+    public bool IsSummaryLoaded { get; set; }
     public string Tags
     {
         get => _tags;

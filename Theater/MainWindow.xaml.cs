@@ -132,6 +132,7 @@ public partial class MainWindow : Window
     private bool _isRefreshingAuthorFilters;
     private bool _tagGroupFilterOptionsDirty = true;
     private bool _tagIndexDirty = true;
+    private bool _bookSummariesLoaded;
     private bool _libraryChromeCollapsed;
     private bool _libraryFilterCollapsed;
     private readonly HashSet<string> _collapsedTagCategories = new(StringComparer.OrdinalIgnoreCase);
@@ -313,6 +314,7 @@ public partial class MainWindow : Window
             if (roots.Count == 0)
             {
                 var savedOnly = await Task.Run(() => _database.LoadBooksByPath());
+                _bookSummariesLoaded = false;
                 foreach (var book in savedOnly.Values)
                 {
                     _allBooks.Add(book);
@@ -1149,6 +1151,7 @@ public partial class MainWindow : Window
         _filterCts.Cancel();
         Books.Clear();
         _allBooks = [];
+        _bookSummariesLoaded = false;
         MarkTagIndexDirty();
         _paginationFirstShown = false;
         _currentBook = null;
@@ -1284,6 +1287,7 @@ public partial class MainWindow : Window
             }
 
             _allBooks = visibleBooks;
+            _bookSummariesLoaded = false;
             MarkTagIndexDirty();
 
             RefreshLibraryViews(sort: true, ensureLibraryView: true);
@@ -1320,7 +1324,7 @@ public partial class MainWindow : Window
         }
     }
 
-    private void BooksList_SelectionChanged(object sender, System.Windows.Controls.SelectionChangedEventArgs e)
+    private async void BooksList_SelectionChanged(object sender, System.Windows.Controls.SelectionChangedEventArgs e)
     {
         SaveCurrentProgress();
         HideDetailCatalog();
@@ -1331,8 +1335,15 @@ public partial class MainWindow : Window
             return;
         }
 
+        var book = _currentBook;
         SetDetailVisible(true);
-        FillMetadataEditors(_currentBook);
+        await EnsureBookSummaryLoadedAsync(book);
+        if (!ReferenceEquals(_currentBook, book))
+        {
+            return;
+        }
+
+        FillMetadataEditors(book);
         SetEditMode(false);
     }
 
@@ -1665,6 +1676,7 @@ public partial class MainWindow : Window
         _currentBook.ProducedAt = producedAt;
         _currentBook.ImportedAt = string.IsNullOrWhiteSpace(importedAt) ? DateTime.Today.ToString("yyyy-MM-dd") : importedAt;
         _currentBook.Summary = SummaryBox.Text.Trim();
+        _currentBook.IsSummaryLoaded = true;
         _currentBook.Tags = NormalizeTagsRespectingRules(TagService.ParseTags(TagsBox.Text.Trim()));
         MarkTagIndexDirty();
         TagsBox.Text = _currentBook.Tags;
@@ -5363,6 +5375,7 @@ public partial class MainWindow : Window
         List<MangaBook> filtered;
         try
         {
+            await EnsureBookSummariesLoadedForSearchAsync(snapshot, searchQuery, token);
             filtered = await Task.Run(
                 () => FilterAndSortBooks(
                     snapshot,
@@ -5395,6 +5408,39 @@ public partial class MainWindow : Window
             _currentPageIndex = 0;
         }
         RenderCurrentBookPage(refreshShelfOverview, ensureLibraryView);
+    }
+
+    private async Task EnsureBookSummaryLoadedAsync(MangaBook book)
+    {
+        if (book.IsSummaryLoaded)
+        {
+            return;
+        }
+
+        book.Summary = await Task.Run(() => _database.LoadBookSummary(book.Id));
+        book.IsSummaryLoaded = true;
+    }
+
+    private async Task EnsureBookSummariesLoadedForSearchAsync(List<MangaBook> books, string searchQuery, CancellationToken token)
+    {
+        if (_bookSummariesLoaded || string.IsNullOrWhiteSpace(searchQuery))
+        {
+            return;
+        }
+
+        var summaries = await Task.Run(() => _database.LoadBookSummaries(), token);
+        token.ThrowIfCancellationRequested();
+        foreach (var book in books)
+        {
+            if (summaries.TryGetValue(book.Id, out var summary))
+            {
+                book.Summary = summary;
+            }
+
+            book.IsSummaryLoaded = true;
+        }
+
+        _bookSummariesLoaded = true;
     }
 
     private void RenderCurrentBookPage(bool refreshShelfOverview = true, bool ensureLibraryView = false)
@@ -6619,7 +6665,7 @@ public partial class MainWindow : Window
         OpenBook(book);
     }
 
-    private void OpenBookDetailFromReader(MangaBook book)
+    private async void OpenBookDetailFromReader(MangaBook book)
     {
         _currentBook = book;
         if (Books.Contains(book))
@@ -6627,6 +6673,12 @@ public partial class MainWindow : Window
             BooksList.SelectedItem = book;
             _ = Dispatcher.InvokeAsync(() => BooksList.ScrollIntoView(book), DispatcherPriority.ApplicationIdle);
         }
+        await EnsureBookSummaryLoadedAsync(book);
+        if (!ReferenceEquals(_currentBook, book))
+        {
+            return;
+        }
+
         FillMetadataEditors(book);
         SetEditMode(false);
         SetDetailVisible(true);
@@ -6718,7 +6770,7 @@ public partial class MainWindow : Window
         }
     }
 
-    private void OpenBookDetailFromHome(MangaBook book)
+    private async void OpenBookDetailFromHome(MangaBook book)
     {
         ShowLibraryView("library");
         ResetLibraryFilters();
@@ -6728,6 +6780,12 @@ public partial class MainWindow : Window
         if (BooksList.SelectedItem is not null)
         {
             BooksList.ScrollIntoView(book);
+        }
+
+        await EnsureBookSummaryLoadedAsync(book);
+        if (!ReferenceEquals(_currentBook, book))
+        {
+            return;
         }
 
         FillMetadataEditors(book);

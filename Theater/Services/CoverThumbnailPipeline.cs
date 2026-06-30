@@ -5,13 +5,16 @@ namespace Theater.Services;
 
 public sealed class CoverThumbnailPipeline
 {
-    private const int MaxMemoryCovers = 160;
+    private const int MaxMemoryCovers = 320;
+    private const long MaxMemoryBytes = 64L * 1024 * 1024;
     private readonly CoverCache _coverCache;
     private readonly SemaphoreSlim _loaderGate = new(4);
     private readonly object _syncRoot = new();
     private readonly Dictionary<string, LinkedListNode<CacheEntry>> _memoryCache = new(StringComparer.OrdinalIgnoreCase);
     private readonly LinkedList<CacheEntry> _lru = new();
     private readonly Dictionary<string, Task<BitmapSource?>> _inFlight = new(StringComparer.OrdinalIgnoreCase);
+    private long _currentMemoryBytes;
+    private long _cacheGeneration;
 
     public CoverThumbnailPipeline(CoverCache coverCache)
     {
@@ -37,7 +40,7 @@ public sealed class CoverThumbnailPipeline
         {
             if (!_inFlight.TryGetValue(cacheKey, out var existingTask))
             {
-                task = LoadCoreAsync(book, cacheKey, cancellationToken);
+                task = LoadCoreAsync(book, cacheKey, _cacheGeneration, cancellationToken);
                 _inFlight[cacheKey] = task;
             }
             else
@@ -62,7 +65,7 @@ public sealed class CoverThumbnailPipeline
         }
     }
 
-    private async Task<BitmapSource?> LoadCoreAsync(MangaBook book, string cacheKey, CancellationToken cancellationToken)
+    private async Task<BitmapSource?> LoadCoreAsync(MangaBook book, string cacheKey, long generation, CancellationToken cancellationToken)
     {
         await _loaderGate.WaitAsync(cancellationToken).ConfigureAwait(false);
         try
@@ -71,9 +74,10 @@ public sealed class CoverThumbnailPipeline
             {
                 cancellationToken.ThrowIfCancellationRequested();
                 var image = _coverCache.LoadOrCreate(book);
+                cancellationToken.ThrowIfCancellationRequested();
                 if (image is not null)
                 {
-                    Add(cacheKey, image);
+                    Add(cacheKey, image, generation);
                 }
                 return image;
             }, cancellationToken).ConfigureAwait(true);
@@ -101,27 +105,44 @@ public sealed class CoverThumbnailPipeline
         return false;
     }
 
-    private void Add(string key, BitmapSource image)
+    private void Add(string key, BitmapSource image, long generation)
     {
+        var byteSize = EstimateBitmapBytes(image);
+
         lock (_syncRoot)
         {
-            if (_memoryCache.TryGetValue(key, out var existing))
+            if (generation != _cacheGeneration)
             {
-                existing.Value = new CacheEntry(key, image);
-                _lru.Remove(existing);
-                _lru.AddFirst(existing);
                 return;
             }
 
-            var node = new LinkedListNode<CacheEntry>(new CacheEntry(key, image));
-            _lru.AddFirst(node);
-            _memoryCache[key] = node;
+            if (_memoryCache.TryGetValue(key, out var existing))
+            {
+                _currentMemoryBytes -= existing.Value.ByteSize;
+                existing.Value = new CacheEntry(key, image, byteSize);
+                _currentMemoryBytes += byteSize;
+                _lru.Remove(existing);
+                _lru.AddFirst(existing);
+            }
+            else
+            {
+                var node = new LinkedListNode<CacheEntry>(new CacheEntry(key, image, byteSize));
+                _lru.AddFirst(node);
+                _memoryCache[key] = node;
+                _currentMemoryBytes += byteSize;
+            }
 
-            while (_memoryCache.Count > MaxMemoryCovers && _lru.Last is not null)
+            while ((_memoryCache.Count > MaxMemoryCovers || _currentMemoryBytes > MaxMemoryBytes) && _lru.Last is not null)
             {
                 var last = _lru.Last;
                 _lru.RemoveLast();
                 _memoryCache.Remove(last.Value.Key);
+                _currentMemoryBytes -= last.Value.ByteSize;
+            }
+
+            if (_currentMemoryBytes < 0)
+            {
+                _currentMemoryBytes = 0;
             }
         }
     }
@@ -133,8 +154,17 @@ public sealed class CoverThumbnailPipeline
             _memoryCache.Clear();
             _lru.Clear();
             _inFlight.Clear();
+            _currentMemoryBytes = 0;
+            _cacheGeneration++;
         }
     }
 
-    private readonly record struct CacheEntry(string Key, BitmapSource Image);
+    private static long EstimateBitmapBytes(BitmapSource source)
+    {
+        var bitsPerPixel = source.Format.BitsPerPixel > 0 ? source.Format.BitsPerPixel : 32;
+        var stride = ((source.PixelWidth * bitsPerPixel + 31) / 32) * 4;
+        return (long)stride * source.PixelHeight;
+    }
+
+    private readonly record struct CacheEntry(string Key, BitmapSource Image, long ByteSize);
 }

@@ -27,6 +27,7 @@ public partial class ReaderWindow : Window
     private const long MaxQualityFitCacheBytes = 96L * 1024 * 1024;
     private const long MemoryPressureQualityFitCacheBytes = 48L * 1024 * 1024;
     private const int MemoryPressureReaderPageCacheEntries = 2;
+    private const int InitialPageCatalogThumbnailRadius = 18;
 
     private static SolidColorBrush FrozenBrush(string hex)
     {
@@ -100,6 +101,7 @@ public partial class ReaderWindow : Window
     private double _pageSlotHeight;
     private NextBookRecommendations? _pendingRecommendations;
     private CancellationTokenSource? _catalogLoadCancellation;
+    private readonly SemaphoreSlim _catalogThumbnailGate = new(3);
     private Dictionary<int, string> _bookmarks = [];
     private System.Windows.Point? _holdZoomLastPointerInViewport;
     private readonly object _pageCacheLock = new();
@@ -2536,34 +2538,80 @@ public partial class ReaderWindow : Window
         _catalogLoadCancellation?.Dispose();
         _catalogLoadCancellation = new CancellationTokenSource();
         var token = _catalogLoadCancellation.Token;
-        var items = PageCatalogItems.ToList();
+        var items = PageCatalogItems
+            .Where(item => Math.Abs(item.PageIndex - _requestedPageIndex) <= InitialPageCatalogThumbnailRadius || item.IsBookmarked)
+            .OrderBy(item => item.IsBookmarked ? 0 : 1)
+            .ThenBy(item => Math.Abs(item.PageIndex - _requestedPageIndex))
+            .ToList();
 
         _ = Task.Run(async () =>
         {
             foreach (var item in items)
             {
-                token.ThrowIfCancellationRequested();
-                if (item.Thumbnail is not null)
-                {
-                    continue;
-                }
-
-                BitmapSource? thumbnail = null;
-                try
-                {
-                    thumbnail = ImageLoader.LoadBitmap(item.Path, 180);
-                }
-                catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or InvalidOperationException or NotSupportedException)
-                {
-                    AppLogger.Warn("reader-catalog", $"Thumbnail failed: page={item.PageIndex + 1}, path={item.Path}, error={ex.Message}");
-                }
-
-                if (thumbnail is not null)
-                {
-                    await Dispatcher.InvokeAsync(() => item.Thumbnail = thumbnail, DispatcherPriority.Background);
-                }
+                await LoadPageCatalogThumbnailAsync(item, token).ConfigureAwait(false);
             }
         }, token);
+    }
+
+    private async void PageCatalogItem_Loaded(object sender, RoutedEventArgs e)
+    {
+        if ((sender as FrameworkElement)?.DataContext is not PageCatalogItem item || item.Thumbnail is not null)
+        {
+            return;
+        }
+
+        var token = _catalogLoadCancellation?.Token ?? CancellationToken.None;
+        try
+        {
+            await LoadPageCatalogThumbnailAsync(item, token);
+        }
+        catch (OperationCanceledException)
+        {
+        }
+    }
+
+    private async Task LoadPageCatalogThumbnailAsync(PageCatalogItem item, CancellationToken token)
+    {
+        token.ThrowIfCancellationRequested();
+        if (item.Thumbnail is not null)
+        {
+            return;
+        }
+
+        await _catalogThumbnailGate.WaitAsync(token).ConfigureAwait(false);
+        try
+        {
+            token.ThrowIfCancellationRequested();
+            if (item.Thumbnail is not null)
+            {
+                return;
+            }
+
+            BitmapSource? thumbnail = null;
+            try
+            {
+                thumbnail = ImageLoader.LoadBitmap(item.Path, 180);
+            }
+            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or InvalidOperationException or NotSupportedException)
+            {
+                AppLogger.Warn("reader-catalog", $"Thumbnail failed: page={item.PageIndex + 1}, path={item.Path}, error={ex.Message}");
+            }
+
+            if (thumbnail is not null)
+            {
+                await Dispatcher.InvokeAsync(() =>
+                {
+                    if (!token.IsCancellationRequested && PageCatalogOverlay.Visibility == Visibility.Visible)
+                    {
+                        item.Thumbnail = thumbnail;
+                    }
+                }, DispatcherPriority.Background);
+            }
+        }
+        finally
+        {
+            _catalogThumbnailGate.Release();
+        }
     }
 
     private void PageCatalogItem_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)

@@ -23,20 +23,7 @@ public sealed class CoverCache
 
     public BitmapSource? LoadOrCreate(MangaBook book)
     {
-        string? sourcePath;
-
-        // Video works: use cover image path (cover.jpg convention)
-        if (!string.IsNullOrEmpty(book.CoverImagePath) && File.Exists(book.CoverImagePath))
-        {
-            sourcePath = book.CoverImagePath;
-        }
-        // Traditional manga works: use Pages list
-        else if (book.Pages.Count > 0)
-        {
-            var coverIndex = Math.Clamp(book.CoverPageIndex, 0, book.Pages.Count - 1);
-            sourcePath = book.Pages[coverIndex];
-        }
-        else
+        if (ResolveCoverSourcePath(book) is not { } sourcePath)
         {
             return null;
         }
@@ -54,19 +41,25 @@ public sealed class CoverCache
 
     public string GetCacheKey(MangaBook book)
     {
-        if (!string.IsNullOrEmpty(book.CoverImagePath) && book.Pages.Count == 0)
+        return ResolveCoverSourcePath(book) is { } sourcePath
+            ? GetCachePath(book, sourcePath, ResolveProfile())
+            : book.Id;
+    }
+
+    private static string? ResolveCoverSourcePath(MangaBook book)
+    {
+        if (!string.IsNullOrEmpty(book.CoverImagePath) && File.Exists(book.CoverImagePath))
         {
-            return book.Id + "|" + book.CoverImagePath;
+            return book.CoverImagePath;
         }
 
         if (book.Pages.Count == 0)
         {
-            return book.Id;
+            return null;
         }
 
         var coverIndex = Math.Clamp(book.CoverPageIndex, 0, book.Pages.Count - 1);
-        var coverPage = book.Pages[coverIndex];
-        return GetCachePath(book, coverPage, ResolveProfile());
+        return book.Pages[coverIndex];
     }
 
     private string GetCachePath(MangaBook book, string coverPage, CoverQualityProfile profile)
@@ -76,7 +69,8 @@ public sealed class CoverCache
             modifiedTicks = File.GetLastWriteTimeUtc(coverPage).Ticks;
             _coverTimestampCache[coverPage] = modifiedTicks;
         }
-        var fileName = $"{book.Id}_{book.CoverPageIndex}_{profile.SettingValue}_{modifiedTicks}.png";
+        var sourceHash = Convert.ToHexString(System.Security.Cryptography.SHA256.HashData(System.Text.Encoding.UTF8.GetBytes(coverPage))).ToLowerInvariant()[..16];
+        var fileName = $"{book.Id}_{sourceHash}_{profile.SettingValue}_{modifiedTicks}.png";
         return Path.Combine(_storage.CoverCachePath, fileName);
     }
 
@@ -95,7 +89,7 @@ public sealed class CoverCache
     public void SweepStaleCovers(IEnumerable<MangaBook> books)
     {
         var validSet = new HashSet<string>(
-            books.Where(book => book.Pages.Count > 0).Select(GetCacheKey),
+            books.Select(GetCacheKey),
             StringComparer.OrdinalIgnoreCase);
         try
         {

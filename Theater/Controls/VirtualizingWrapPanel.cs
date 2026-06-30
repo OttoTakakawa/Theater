@@ -113,7 +113,7 @@ public sealed class VirtualizingWrapPanel : VirtualizingPanel, IScrollInfo
             return availableSize;
         }
 
-        var overscan = Math.Max(0, OverscanRows);
+        var overscan = GetOverscanRows(slotHeight, columns);
         var firstVisibleRow = Math.Max(0, (int)Math.Floor(_offset.Y / slotHeight) - overscan);
         var lastVisibleRow = Math.Min(rowCount - 1, (int)Math.Ceiling((_offset.Y + _viewport.Height) / slotHeight) + overscan);
         var firstIndex = Math.Min(itemCount - 1, firstVisibleRow * columns);
@@ -313,6 +313,34 @@ public sealed class VirtualizingWrapPanel : VirtualizingPanel, IScrollInfo
         }
 
         return Math.Max(1, (int)Math.Floor((width + HorizontalSpacing) / itemSlotWidth));
+    }
+
+    private int GetOverscanRows(double slotHeight, int columns)
+    {
+        var owner = ItemsControl.GetItemsOwner(this);
+        DependencyObject cacheSource = owner is not null
+            && owner.ReadLocalValue(VirtualizingPanel.CacheLengthProperty) != DependencyProperty.UnsetValue
+            ? owner
+            : this;
+
+        if (cacheSource.ReadLocalValue(VirtualizingPanel.CacheLengthProperty) == DependencyProperty.UnsetValue)
+        {
+            return Math.Max(0, OverscanRows);
+        }
+
+        var cacheLength = VirtualizingPanel.GetCacheLength(cacheSource);
+        var cacheBefore = Math.Max(cacheLength.CacheBeforeViewport, cacheLength.CacheAfterViewport);
+        if (cacheBefore <= 0)
+        {
+            return 0;
+        }
+
+        return VirtualizingPanel.GetCacheLengthUnit(cacheSource) switch
+        {
+            VirtualizationCacheLengthUnit.Pixel => Math.Max(0, (int)Math.Ceiling(cacheBefore / Math.Max(1, slotHeight))),
+            VirtualizationCacheLengthUnit.Item => Math.Max(0, (int)Math.Ceiling(cacheBefore / Math.Max(1, columns))),
+            _ => Math.Max(0, (int)Math.Ceiling((cacheBefore * Math.Max(1, ViewportHeight)) / Math.Max(1, slotHeight)))
+        };
     }
 
     private int GetItemCount()

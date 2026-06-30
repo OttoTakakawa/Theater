@@ -454,11 +454,19 @@
                              ItemsSource="{Binding PageCatalogItems}"
                              Background="Transparent"
                              BorderThickness="0"
+                             VirtualizingPanel.IsVirtualizing="True"
+                             VirtualizingPanel.VirtualizationMode="Recycling"
+                             VirtualizingPanel.CacheLength="0.5"
+                             VirtualizingPanel.CacheLengthUnit="Page"
+                             ScrollViewer.CanContentScroll="True"
                              ScrollViewer.HorizontalScrollBarVisibility="Disabled"
                              ScrollViewer.VerticalScrollBarVisibility="Auto">
                         <ListBox.ItemsPanel>
                             <ItemsPanelTemplate>
-                                <WrapPanel/>
+                                <controls:VirtualizingWrapPanel ItemWidth="156"
+                                                                ItemHeight="224"
+                                                                HorizontalSpacing="0"
+                                                                VerticalSpacing="0"/>
                             </ItemsPanelTemplate>
                         </ListBox.ItemsPanel>
                         <ListBox.ItemContainerStyle>
@@ -488,6 +496,7 @@
                                         BorderBrush="{DynamicResource Brush.Reader.CatalogItemBorder}"
                                         BorderThickness="1"
                                         Cursor="Hand"
+                                        Loaded="PageCatalogItem_Loaded"
                                         MouseLeftButtonDown="PageCatalogItem_MouseLeftButtonDown">
                                     <Border.ContextMenu>
                                         <ContextMenu DataContext="{Binding PlacementTarget.DataContext, RelativeSource={RelativeSource Self}}">
