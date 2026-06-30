@@ -1692,7 +1692,7 @@
                              BorderThickness="0"
                              VirtualizingPanel.IsVirtualizing="True"
                              VirtualizingPanel.VirtualizationMode="Recycling"
-                             VirtualizingPanel.CacheLength="4"
+                             VirtualizingPanel.CacheLength="0.5"
                              VirtualizingPanel.CacheLengthUnit="Page"
                              ScrollViewer.CanContentScroll="True"
                              ScrollViewer.HorizontalScrollBarVisibility="Disabled"
@@ -2515,7 +2515,7 @@
                                           Visibility="Collapsed"
                                           VirtualizingPanel.IsVirtualizing="True"
                                           VirtualizingPanel.VirtualizationMode="Recycling"
-                                          VirtualizingPanel.CacheLength="4"
+                                          VirtualizingPanel.CacheLength="0.5"
                                           VirtualizingPanel.CacheLengthUnit="Page"
                                           ScrollViewer.CanContentScroll="True"
                                           ScrollViewer.HorizontalScrollBarVisibility="Disabled">

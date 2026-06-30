@@ -8,11 +8,17 @@ public sealed class CoverCache
     private readonly AppStorage _storage;
     private readonly LibraryDatabase _database;
     private readonly Dictionary<string, long> _coverTimestampCache = new(StringComparer.OrdinalIgnoreCase);
+    private CoverQualityProfile? _cachedProfile;
 
     public CoverCache(AppStorage storage, LibraryDatabase database)
     {
         _storage = storage;
         _database = database;
+    }
+
+    private CoverQualityProfile ResolveProfile()
+    {
+        return _cachedProfile ??= CoverQualitySettings.Resolve(_database);
     }
 
     public BitmapSource? LoadOrCreate(MangaBook book)
@@ -35,7 +41,7 @@ public sealed class CoverCache
             return null;
         }
 
-        var profile = CoverQualitySettings.Resolve(_database);
+        var profile = ResolveProfile();
         var cachePath = GetCachePath(book, sourcePath, profile);
 
         if (!File.Exists(cachePath))
@@ -60,7 +66,7 @@ public sealed class CoverCache
 
         var coverIndex = Math.Clamp(book.CoverPageIndex, 0, book.Pages.Count - 1);
         var coverPage = book.Pages[coverIndex];
-        return GetCachePath(book, coverPage, CoverQualitySettings.Resolve(_database));
+        return GetCachePath(book, coverPage, ResolveProfile());
     }
 
     private string GetCachePath(MangaBook book, string coverPage, CoverQualityProfile profile)
@@ -107,6 +113,7 @@ public sealed class CoverCache
     public void ClearAll()
     {
         _coverTimestampCache.Clear();
+        _cachedProfile = null;
         try
         {
             foreach (var file in Directory.EnumerateFiles(_storage.CoverCachePath, "*.png"))
