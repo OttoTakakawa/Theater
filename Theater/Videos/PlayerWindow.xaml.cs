@@ -49,6 +49,9 @@ public partial class PlayerWindow : Window
     [StructLayout(LayoutKind.Sequential)]
     private struct RECT { public int Left, Top, Right, Bottom; }
 
+    [StructLayout(LayoutKind.Sequential)]
+    private struct NativePoint { public int X, Y; }
+
     private const int WM_SIZING = 0x0214;
     private const int WMSZ_LEFT = 1;
     private const int WMSZ_RIGHT = 2;
@@ -80,6 +83,9 @@ public partial class PlayerWindow : Window
 
     [DllImport("user32.dll")]
     private static extern IntPtr GetParent(IntPtr hWnd);
+
+    [DllImport("user32.dll")]
+    private static extern bool GetCursorPos(out NativePoint point);
 
     private static readonly IntPtr BlackBrush = GetStockObject(BLACK_BRUSH);
     private bool _videoHwndBgFixed;
@@ -122,6 +128,7 @@ public partial class PlayerWindow : Window
     private readonly DispatcherTimer _progressSyncTimer = new() { Interval = TimeSpan.FromMilliseconds(250) };
     private readonly DispatcherTimer _progressSaveTimer = new() { Interval = TimeSpan.FromSeconds(8) };
     private readonly DispatcherTimer _controlsHideTimer = new() { Interval = TimeSpan.FromSeconds(2.5) };
+    private readonly DispatcherTimer _fullscreenPointerTimer = new() { Interval = TimeSpan.FromMilliseconds(100) };
     private readonly DispatcherTimer _rightHoldTimer = new() { Interval = TimeSpan.FromMilliseconds(RightHoldThresholdMs) };
     private readonly DispatcherTimer _statusHintTimer = new() { Interval = TimeSpan.FromSeconds(1.4) };
     private readonly object _progressSaveSync = new();
@@ -217,6 +224,7 @@ public partial class PlayerWindow : Window
         _progressSyncTimer.Tick += ProgressSyncTimer_Tick;
         _progressSaveTimer.Tick += ProgressSaveTimer_Tick;
         _controlsHideTimer.Tick += ControlsHideTimer_Tick;
+        _fullscreenPointerTimer.Tick += FullscreenPointerTimer_Tick;
         _rightHoldTimer.Tick += RightHoldTimer_Tick;
         _statusHintTimer.Tick += StatusHintTimer_Tick;
 
@@ -337,8 +345,10 @@ public partial class PlayerWindow : Window
         _progressSyncTimer.Stop();
         _progressSaveTimer.Stop();
         _controlsHideTimer.Stop();
+        _fullscreenPointerTimer.Stop();
         _rightHoldTimer.Stop();
         _statusHintTimer.Stop();
+        HideOverlay();
         StopTemporaryFastForward();
 
         _thumbnailCache.Dispose();
@@ -923,7 +933,27 @@ public partial class PlayerWindow : Window
     {
         if (!_isFullscreen) return;
 
-        var p = e.GetPosition(this);
+        HandleFullscreenPointerPosition(e.GetPosition(this));
+    }
+
+    private void FullscreenPointerTimer_Tick(object? sender, EventArgs e)
+    {
+        if (!_isFullscreen)
+        {
+            _fullscreenPointerTimer.Stop();
+            return;
+        }
+
+        if (!GetCursorPos(out var cursor))
+        {
+            return;
+        }
+
+        HandleFullscreenPointerPosition(PointFromScreen(new Point(cursor.X, cursor.Y)));
+    }
+
+    private void HandleFullscreenPointerPosition(Point p)
+    {
         var nearBottom = p.Y > ActualHeight - 120;
         var nearSidePanel = p.X > ActualWidth - Math.Max(_sidePanelWidth, 96);
 
@@ -1835,6 +1865,8 @@ public partial class PlayerWindow : Window
         Cursor = Cursors.None;
         HideOverlay();
         _controlsHideTimer.Stop();
+        _fullscreenPointerTimer.Start();
+        FullscreenPointerTimer_Tick(null, EventArgs.Empty);
         FlashBackdropDuringLayout();
         ApplyWindowModeVideoLayout();
         ApplyFillCrop();
@@ -1855,6 +1887,7 @@ public partial class PlayerWindow : Window
         if (_restoreWindowState == WindowState.Maximized) WindowState = WindowState.Maximized;
 
         BottomBar.Visibility = Visibility.Visible;
+        _fullscreenPointerTimer.Stop();
         HideOverlay();
         SidePanelHoverZone.Visibility = Visibility.Collapsed;
         SidePanel.Visibility = _sidePanelVisibleBeforeFullscreen ? Visibility.Visible : Visibility.Collapsed;
